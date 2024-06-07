@@ -59,6 +59,14 @@ Well.... let the trolling begin :-D
         - Typical sample rate ("ODR/2") seems to be 10/2 Hz or 50/2 Hz but can be as high as 5/2 kHz,
           so we could probably use this for input (tilt, then double-tap).
         - We could react to disturbance. We had lots of fun with that feature of a spring reverb :-)
+    - small epaper?
+        - Doesn't look like a display (i.e. not digital). Can show function of current firmware.
+        - Waveshare's 1.9'' epaper has I2C but that is 7-segment, not pixels. The others are as
+          complicated as the one that we have used for the Framework 16 project (and they also use
+          quite a lot of pins).
+        - [This one](https://www.waveshare.com/product/displays/e-paper/2.13inch-touch-e-paper-hat.htm)
+          has touch (only five points), maybe a suitable case. Communication is still SPI. Maybe as an optional
+          feature instead of LEDs and touch. It is rather large.
 - mechanical:
     - "analog noise generator with gate": shrink tube, put in the middle of a patch cable
     - "analog multiplier with gate": Eurorack module cover (3D printed or wood), glue PCB to its back, three jacks
@@ -113,13 +121,18 @@ Well.... let the trolling begin :-D
         - 2x I2C -> PB6 and PB7
         - 1x wakeup+gate -> PA0 (WKUP and ADC0)
         - 2x input (ADC)
-        - 2x positive and negative rail? (so we know our usable range)
-            - wakeup is connected to unfiltered gate, i.e. not the same as current voltage in capacitor
+        - voltage doubler / inverter
+          - 2x positive and negative output rail (ADC, so we know our usable range)
+          - 1x input supply (ADC)
+            (wakeup is connected to unfiltered gate, i.e. not the same as current voltage in capacitor)
+          - 1x inverter for negative rail (PWM)
+          - 1x doubler for positive rail (PWM)
+          - 2x output signal (ADC)
+          - (ADC signals for rails could be used as LED outputs if we don't use high-z and keep the ADC voltages below LED Vf.)
         - 1..2x output (TIM)
-        - 1x inverter for negative rail
         - 1x VUSB detect (BOOT0 cannot be used as an input)
             - Could be the same as e.g. a touch key (which is then not usable while VUSB is present).
-        - sum so far: 10
+        - sum so far: 15 (7 ADC)
         - 0..1x touch (ADC)
         - 4x LED ?
             - [charlieplexing](https://en.wikipedia.org/wiki/Charlieplexing)
@@ -152,6 +165,10 @@ Well.... let the trolling begin :-D
     - Well, let's use one of them anyway. That's good enough.
     - We want TL072CDT because that's the only basic part in that category! Supply current is
       2.5 mA max but output swing is 1.5 V below the rails.
+    - Actually, the [basic part LM324](https://jlcpcb.com/partdetail/Stmicroelectronics-LM324DT/C71035)
+      is quite low-power. How did I miss that before? It will still be 1-3 mA because it has
+      4 amplifiers.
+    - Downside of LM324 is that its `V_OH` is 1.5 V below the upper rail.
 - Can we make a simple TRNG? What sources of entropy do we have?
     - [Infinity Noise](https://github.com/waywardgeek/infnoise) has good documentation but
       3 opamps is a bit much for us.
@@ -194,6 +211,11 @@ Well.... let the trolling begin :-D
         - The gate should have a large hysteresis.
     - Options?
         - Supply for MCU by DCDC (up to 3x more efficient).
+            - If we find cheap DCDCs, we could have a step-down for the MCU, step-up for real 10 V
+              and inverter for -10 V. The quiescent currents will add up so that is probably not
+              feasible but we can try. -> but opamp would have to be even more power efficient.
+            - Step-down: [TPS560200](https://jlcpcb.com/partdetail/TexasInstruments-TPS560200DBVR/C83671)
+            - Suggested capacitors are rather high (10 uF) for most DCDCs.
         - Use less power for the MCU. It needs only 0.5 mA at low frequencies.
         - Voltage doubler (and maybe a voltage inverter from the higher voltage instead of MCU pin).
         - Generate output voltage from MCU pin (0 to 3.3V range, only passive filter).
@@ -208,14 +230,59 @@ Well.... let the trolling begin :-D
         - Use an actual low-power opamp.
         - Hope that the opamp is closer to its quiescent current than supply current because our
           signals are slow (but that is still more than 2 mA for the dual opamp).
-
-    - TODO: Simulation.
-        - 10V -> 1k -> Diode -> 1 uF -> VCC
-        - Voltage doubler. Voltage inverter. With actual MOSFETs.
-        - PWM signal -> half bridge -> filter
-        - Turn that 10V on and off.
-
+        - Generate output voltage controlling regulated voltage doubler.
+            - This can work because load on the outputs should be fairly constant.
+            - To be more precise: We know capacitance at the output and we know how much we transfer
+              with each cycle. Thus, we know how many cycles are need for a certain change in output
+              voltage. We measure the output voltage to estimate load impedance and compensate. We
+              optionally charge through a resistor for a shorter time to adjust by less than a full
+              cycle. We also have to adjust for variations in input voltage if we don't use the 3.3V.
+            - Downside: This will probably take 4-5 pins per output.
+            - Downside: This will only get us a range of -3 to +6 or so.
+            - Downside: Unless we add a H-bridge, power will come from LDO/DCDC for 3.3V, i.e. less efficient.
+              (or maybe we can avoid that with just one FET and one diode per capacitor..?)
+            - VCC will flow to the output through the diodes if we stop the cycles, i.e. we cannot
+              output low voltages without an additional switch for VCC.
+            - Can we do this with a few MX6208 (L9110 with more suitable specs for this)? -> 22 mA
+              for high-z state - no.
+            - Can we do it with 3.3 V and 3x GPIO? -> No.
+                - [see this simulation][sim1]
+                - Reason: The diodes will keep us to within 2x 0.4 V of 0 V / 3.3 V.
+                - If we split the GPIO on the right, the simulation will work but ESD diodes will
+                  spoil it.
+    - Thus: Go with LM324. Keep current for MCU low enough. Maybe boost its supplies with voltage
+      doubler / inverter (but only driven by MCU pin).
+    - [Simulation][sim2]
+        - We can double output swing (but asymmetric).
+        - The switched capacitors need rather a lot of current on 3V3 but that shouldn't consume
+          much power because the current is symmetric. The actual power comes from the higher VCC.
+          We will lose 2x 6 mA in parasitic resistances, though - which should be mostly the FETs
+          of the GPIO.
+            - See [this simulation][sim3].
+        - Startup time is roughly 5 ms, [see here][sim4].
+            - ![Simulation](./img/sim4.png)
+        - VCVS to convert signal to PWM? [Yes, but very slow][sim5]
+        - [Simulation with PWM][sim6]
+            - ![Simulation](./img/sim6.png)
+            - The 4th stage of the filter doesn't really match the rest, I think.
+            - We should remove the "shift voltage" part and adjust the offset in the 2nd filter stage.
+            - Offset (voltage shift) and gain should be trim potis because they depend on how well the voltage doubler/inverter are working,
+              i.e. we are unlikely to get it right the first time.
+            - Add solder jumper for skipping the voltage doubler/inverter.
+            - Pins needed:
+                - 1x voltage doubler (PWM)
+                - 1x inverter (PWM)
+                - 2x PWM (1 per output)
+                - 2x ADC for rails
+                - 1x ADC for VCC
+                - 2x ADC for outputs
+                - That is a lot!
 
 
 [LP358]: https://www.ti.com/lit/ds/symlink/lp358.pdf?ts=1717468161669
-
+[sim1]: https://falstad.com/circuit/circuitjs.html?ctz=CQAgjCDsB0AcYCYCsBTAtLcAGaCtYUkgGYtYEA2ATishCS3pABZj70wwAoAN3ERAIEzfgnAJMjMQ3z5w0CknmKQjHMwS8WVCiFIjmO8JF1qWjYtDZmcSLgGNR4zJzHExjMOknRmWZmCwVGABwsGGEDj43AAmgrAuFJ5J4LpiYABySJCcXADmTkIiroJ+qqr52rr6VXp45VhccSXu5UbpWTncjoxGUmTlYNCyI6OyXmh0UcKcSIFIFELuQmBKUVjcBf2SpTZcAE5tuhiezCKeI5Un4Gcg12BUHhWHhrpgJnqwxSkX+A6f3wsX0EkCe63GelwNBoCQ2nEUATWww2lWIwMIbmBNTUXAA7k5WmAUkSKvjescSRRzloSgE3gJ3GZpKNlEohio1L4qJVaSTacwdo1HK1GXUAYNvJCCBRIF9ZUhiAETEjok0xWiRK0zpgOtlcviWvURfVGnE0FT4pgRejwJ19XcLRIdn0uABnXaCAbEYhpAaeEAAMwAhgAbV0oN2W1JAwGDQOh8Oon2eq3JjENPFi7XOFiwHEGiS5qRlPCSTPCbZRok4gBGKZzProQjWXDrFsQiSkFGsrZAeb0ybAxCoLGoFQ0bHTFcEFvcpi4E+jILEyE1xEiC4QbBCmooOoYeg0FQAHjO2MQFnokCOLyORMI9MeADqugDiAAUAJIAeS4AHsbnAco-BobBVDgcp0k1f9wCUVpGBAkchmQcCRloRRFjZQRYL0Lg0XKAAxCA1mwRg0AgAARABXAAXABPF8AGE6PsEMI3wxgiL0MCZFkO4IAI-YUAARyolAADt7DovDEhALiSLAORyJAaj6KYli2Jk1I5IgbdGF4pSBKE0SJKkrggA
+[sim2]: https://falstad.com/circuit/circuitjs.html?ctz=CQAgjCAMB0l3ZIBYwDZ0c+g7OGAmOfbbAZkgA59UBOG3AVkhAZCVJYFMBaMMAKABuIbhWZgkSEWJCl8UBUma5mq6A34AnEXNnykFPQsRx+AYzaHdB8JIUx4CFtHylsNSUjqpIqJKlJWB0gBAHNLWykbMGxUe35w0XE7JPBY+OEwfEM0cWyQfHwpZn1HcGhUVjAKoKh1c3B8vnksq3lxWEcurrAeXG5saDFUfAZSclIKBioKGjqEfgATCN1WoxaAOQZsPiXGtoLKdfAtnYELQgPLyIV8Fz6QQdcpqkD6MAYPGiDOsP2Cor-IqqKBaArYeS6YgtHwKJimADu4Mh8muUKEID8emYWMmxQKbDK1Uq5RJag0y2u0KBEIJYFOu2Wa2pNmpm22u3CrNprKU8XCuIoUixShBkAa11yh0M1JK9wGBWgWVifgogWGUxUv34SMldklsPF4QN4hoMLFOuR4FhJtB2mpUrZtOY5ERVrZR1lGPIUilpFQOUNsjwcHKVXU9nqSjmkhy6W2cRiibqcTUkFcJm6XVRlp91pKtKl4qRDCyN1LKNBJbLUNpumLLDL1wrVobLepea9JfSSZYPbLDdj4DLQ6LYNHNcIw-aBXG4u0CenbGiA-ApDNDbk4ibhcNltHZtkAeloOWeb9yBP7LOYM7R07zpDbofqNpXu0-sDLuP11NPnnR4yvel6-k+4puMwqS6NwuirOAoJKBwnzyNwNhkHEoqKEgAD6YDYZA2GEAYeHBCE+FKuuSDELG2BINMdGoNhvDYThkjYaQLEMPhnHsWCazNP8RaHHx+RbpiUhiSU4oWMyhaiVOHRZkpvQKjAVE0EKKCxFk7B5sEAgAPaNNaxiFDQyguNMhC0KgYAUB8YDrvMTg4sZHCkBALoQO5ILkLI-CTLIHAAGKeU+hzwCIEAAEqcAAzgAlnFAAuACGAB2ZicAFVhSKFxiRYQkW8CAsWJSlGVZTlhIgPl4hlPCoYlWVSVpZl2VAA
+[sim3]: https://falstad.com/circuit/circuitjs.html?ctz=CQAgjCAMB0l3BWcMBMcUHYMGZIA4UA2ATmIxAUgpABZsKBTAWjDACgBjcMFEFPPLUH9BVMLHiSpcMM3IZY2PITwYUYZWEpqoE9gCcQTbLxFHihPgKh9IbAObnL2BLyYWQ2FTbsA3J1aC7s6uNrw0kuDQhEjiMT7QCJye3mZegi68VDBSEAjQeK44hCiUCNjEPKJ6DnwIzpA0dc5oPmwAJtym1mDE3cIg7QwAZgCGAK4ANgAubADOXXwR4H1L2eAgY5NzDGwA7iumy739UPuLKMc8gWedrLyZF9a8Q2NTs-5MhE10bt+eoXWyyQ6xgSUcXx+JiM-xoNFEZwWVEe-0e6y2OzYhl+NxxaOQcHOeNC6QBWXOpUsZhONzsNFalJu2C8tPAhHOpLMOLMdgOnOszKp1l5KQyJJZuCadgWxlO8NZVAxu2wGCokLJNkeEAgKCxixRTXxaGS9w1ppx2QkMloBTwYDoCBopBcvUIlhykHYjnN0PN8uybAA9uByP8xAgtAhyGBLVK+CHPEGNhAxC6SNQYNr4xBsEnWJ4srRIKQM7BSvHePnc0A
+[sim4]: https://falstad.com/circuit/circuitjs.html?ctz=CQAgjCAMB0l3ZIBYwDZ0c+g7OGAmOfbbAZkgA59UBOG3AVkhAZCVJYFMBaMMAKABuIbhWaEKIsSBqoo8pMxrzmMBvwBOI0vhA62k-c0Rx+AYwN7dSSWCRIVseJAgNopcqQYV7DUjR8GXRgEfgBzSzsHG3BsOVVwqXFKJJB8RRUhcHxbVGMctPT5a2dwaFRWMHLWVWh1CzACvl1Gw2Cy506usB5cbmxoOmIPOxpIbAZUDygnAQATS31WqzTwADkGbD5+BeX9CRWWja2BCwP9lKji6HxekAHPAMaadjiXCBCXROX8Ip+MhJaYi6fbYFp5eRMUwAdzSYMOKX2WVQ0RiKJYjWKbFKiBUM3UCwOwOykmJR02212BWJMTJ6wpAgitPhtIBUHMaUuEKJ8PENzu+GgKGwr1IVHwHhIM1CsIOVzlEMgiQVxho4NU7Nl8LQyVygLh6oNRuY5BhRrJKWJSuE5AcOr0qD18g4JmMdTKNXx-EUynstjiLADYCDM3i0olrq6zl0+H4sNt4G52sVcYxLXsaZWSthDExoJBwVTuZjKWLxqLmOJCatRaDAc2cmamrYMSbfsT+vbTZ0xkx4g8Sq0DfAmK7ffA-kIqZ7I5jyYSsK7aodpJSSoWCft1ct9JOmj0yE5hkPVrw8GnJ-hZN5+9Ijo7K6P8jAslMWjvq+PDgOxmc-FI2DMKIJq6Nw+hLOA7KKBwKIgfcPgGBq7AAPpgMhkDIYQNhoZ8LjodAYD+EgxB+iK3hIJMyG8MhSA0aQyH0fY6E0bRpD7ssTYcYqnLsQGHiNnm97JByPzanxd7Pk4UbdHc3CCnQ-hwC8aDpL8NSzPwADOqSyKkRjyAAZgAhgANppnD8GADDKN2h7dkJkGRl0HLgYe+goGGgq3P0eh1LIPiKBQ2BiKgVm6Z8AgoEBtkOLweYIRAAB+AAyACypDBtwgjBAAOpp-R5bhHx5YQ4h5VUULSdGPCEXl3AwGQIoUSMSBxH42CFWk5U1aQhVSY0kANuQFDeJAGWEfgnWQHVYB9fAA1DZQo3jTodUNQBvgtW1AF5YoeWJSZAC2GXYNwACOAAOJncAAgjAxWaVCXWaUgPV9WCHhqo67A0HeTCTZpZWad5tX5QQ1kkIojVBC89BTeVa03BDIrjABMNIHDgPQB9k7ff4f2QADYj7UdJ3nQAdtdd03FAJVwM9FVVZ0IO9WD2MbVZXh5JQYAULQnUAz0vCs+D9C8xSIqNKFFDw-ls1Y-gEPi1skvULziONSgfiTHAFC8-zL3TZpB3HZll1U-dtOPfTAOvcL705K1FHEAE5BTDLgPPSzc3IHwGPjKjYJxHesvy58KCjAHjXEFMqAOz4ZEuxQbtinlxPG6TZuU7dBBWyYz2kFJTNwKQb1s2CdCoNgv2K5AynoALJVlw16T2EMWxVwwKAe6oM0O-YGNqh3Ezdxr+CV9XOhMPXceGyTpunebOc00bT22835RjC8cDBcRKBu43wNl-V5S2r8Y1TC8cSNKHiNTMg593kR18AzAtB14o4w+OkhGQLP6cmzJmdbO1NcqaXzgDQuxdnCl3tuXO8Epfhi2DFMVqh9vZsyQOgFwtA-CUAQQbXuctEZYLyGgGgeDk6oGoDQDWCCdDjxOMHNBc8M4L3OldZeYCIF5SgdAkux8QiVz5nwfwOsghxHQWXKoXhWo6BfBMMEOQXCy14OVdwXcyD4AUZsX4Yh5Ynzrv5UKhEKF5AkbPPabCgGcNAXnG2vCi7F1gaDE+KMJGEwCiI8YUi4GGMaN4DK3gSAVDrkwDqnsjZqLZi4RWycrJBTamEnx5dFAeMdjYUKKSrGALNrY3Oq8HEvWPkgaAI1k4X0aCKRWOhei+NcVUBAcBcx0BcCQHakSEZy1mM0l8YxgyNTqqU8pnhQokRqd5CJADM6LxAQU8qRS+H8JcazNxjp77O0CfQDw9SRY3B0Btagf9x7IBCaosO+yJTVLyNQsYrVJHl3WbaIIWyyCsxyTMjhFsV55TXrtDebyXD41CmqQgESgYYLWSNHI1c-4UJIgwW+jzoVBTGLghF70BymLvC+c+Uyja5Nmd87hiynFMxWXfX6I1vC-WqRQvwuy5oSj-pLQmpUGBdxFlbaJIRmVVyiufQanLKVig5RQWlxF6XvIJZ8pedijY8M0ks6BFK2a0CshUChpBP4BDIIyhWZB+UnBGogHZnTiEGrvCKY1uYxqrLfjQDV1k-A6qCtK+eNjiX2KBsq5xgjsa80VhKIiQQIxcoBhgz4W89bpGEUwVqs8iE8qcNGxog9HTxoeW4wNQRPrOzDbtGV7C5XzOtkDO2oMGq81kWIEUdAKF8H1SfYY1cfCExfGNZOSAkXNsagERQ2ixhim1e9atXda2DwbfLaZxa5k-PAaS-hAi-FVqoLm9gY0wTEXBV7DezhNgoCwWCPWoTFa0PNcm-dksj05DQP9ayGsc0Sg3QBVSESPnFvyfOpgz0K2v2qAEPm1BcwRxPfUgGzaqBbBLo7HFaoe0ECgyYHQPg4P-s1RQIDFQ7B8DA5pGdQCQEkp9WSqqqrDEcpsFgzDfhk6osRZ7CNG8XgctKukflUwMrnL6ixoIRAj1YJGIjIVVHHQjWHfRwtHq8lesKeWje6qxD2CrsFLwgGm3gwAlZSYJzWrEBGghpGWmOW3NOfphjDrebICPap6ymG05FsI7JhZBcaoQarXkMYk8AlkCCOBn2zTlFi0QYRDlkxuNY33UFrYIWvAmcfZ58Yv0fNeFto5mTt0SWud4O5gNiXdHQTiBUfzkW0AoC8zo+NUwIshDKx2rY9AOXIGq+XHUYwCubvQAxj9nrMtWx-evHLo7fMYxFFagCerGNNyGzEu9g1graJjlXMxhmcFME2FQKpOAVtYxVrI+g7Aq4TdZgRrOVMwF-OKXAhqSkgify1oaxNu7rspuhugOweQ9YUSewqn22yJjvawTzb771bvpDgA9u8-90tEq4f1opFa9mARyC81qVlfi0HDdNytr2MqyAmooF8QUe55z+2QF8oUdCE91T3bGnjUdbFDZjhz0nYfyrpgzGqFyUajEVo0IJ47D4MDc3Q9rQd0CK3YIZsgYuluS6R4TjGfOIyUY9qdtnNQSqc94EbcGG6N3iM2BlJ7ANhdxRmkKauYLvAvkmL9Llv3umtTVOMG3Zj7d9Xl8gcghvyfQ9ZxTKmA2A9zAAF7PUJdwMPEfPnR6NhlIhCe85jCtlQfr3NvXwDzuQPO4OiFWatlFIho0iG8l+fnBVpUiF56tlXemles8Kpz-HwC2fG+Fvz4qcqYh6-lS70qq2ltIFc894aru6QgqX3xofFx8sKrYIJs7+w-gTe-JFwrPw6AxFNWIotkrMBAMo6YE-bwd3D5CxvuA2AwYAKu9auPrwO7Bbr8QzQjGYXCb475oVfcvA5AJj-0fHEE-l-zQEfEAI8mdF+mzBWEgIgLAJgNclijAITBgMAI-BEBiAwKVAiHgLkAgJiAXBEBikWELDClnEfDbAgggCck6FTF0n4hkDkE-mbCoILDYAQNTHRHbF0hYJwJAHRDLBiDLCIJIKQPZAAHtshExnwkFmAHg0diJcx35iBlDpQEB5BGwQQDxnQTQ0hlBxBlA2IxQVgAAxD4M8ZILPXgEAAAJU4E0gAEtNIAAXIycmMwCyEw6Ycw58LPKvaKOwhw5wtwjwrwwwZQXw38LPSqQI+wpw1w9wzw-gIAA
+[sim5]: https://falstad.com/circuit/circuitjs.html?ctz=CQAgjOB0CsBsBM0CmBaA7OADJenPzTQGZMAOeWATko2kxGhABYiHUwwAoANxBVPq5SfASEqwQ9ek3qVJ87NE4AnPkXgh1zYVvpg8mTgGNtmjU2FgmTBZAN4I0HOUqlYaSkTBpr+SXcwuAHNTKxsLcDQJKU4Q-kEyEUEZBR5weEtYPQyQeHgbQWZ7KFhGMEhS2yUTMByODVqdDT0A+zb7MFQMfjsKfLAvTGtoGTlsB04AE1MtRrNc8AA5aDQOKfSm3MStBuXVrhMheaOw+XgcLpA0HDAaQM9CWDBSEf8JkLm8m0+UmNUCDQ7NANLLyOh4TgAd1ywOO2w08DSsHCEWRDFqZyKBiwCn8SmmRwBGxhCKWKzW00+sIiRN25OCpiJNN+kmMW0yCWERMEF3QuUgTHgYGRRB8K1IUQIb0CUPZ4GscuFMRCJ1BtxBUlZ0KJSsVoMM-1hutpsPoJAh2thtMS3LS0Eo5nEDAdzF0miweCgZRgVU4o2YEW8EhWEiD4H80Te8EG7XaCNlJG+oJ1+tl0Axp3TgOaaYxQOzWvRCMSWZJhdLRMTZcM0JDkWDUXAGJrAcsGOsHNZqg7TezembuSIJBUDEb9VbvfkAwdLfU-YRRtT0J76s0sC5iUM0yruqrhLJ+xHe+2Q2rHotmlPJoXOdURHX4FB943wj04ghd4fR2Pr-PhlF9DxPMKBaLM4YGsS45zLqCQjqcQ6hnmD6wTUOQ6gqCFTq0sZtJ0fIoOcDoWNY1BEOI4j3tEARcAAzkkYgSEBbr0AAZgAhgANjRSCcGA9qTjuSG-hA+g4YYJigaeWhMMKZy8hgRAVHkQxUPkaD4M8EDjDKMmAeOVYoPppDfCAAB+AAyACyXhoCg3DNAAOjR6BOdpgSSE5uCCE55TgmJBjwOwRBOSg2DEMilAyKsLCwMigSubkPlBa5rQcAgMlPFQtQWGpCWYCFYApQYaX9JllDZeQTBoCFYX3kwkWYNFlEyIVNEyE5pkcQAtjZKAAI4AA4cSgACC2BaU54KJW1yU0WFeR1SMsAIctngJfAnmzaFkDPOICDkCM6m1M8eU+TVO2kHtGSIFVgRCqQKXAtGyJLStZHBTRAgdd1vV9QAdsNY04B5NFedNvn+fYgWGR923hVVQ7GZ4dBVdA61JTDKW7U8JB5Fk8CUGQVWnc5rXjZdOP4BQ+CE8Z1XObVyLEEQSNECjaBo21+U0Z1PXeP1Q2jeNINTRtM2Y3NkDAsCgoWJ4wqRcK6Og7N2lkdGgQdp4QzqGLUhnZLeDqyQYSXYmuuPQCstmwrGVOV9PM-fz-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-DBxFkg-+-EQYhoQBdARTxP8cw+I5B9IHxxwWAGhwxRIcJZQnRMInRU8WwYDQJb9ohZQ0QexUDPdYgQA0RSwIhSxACBIpIQCCg0hvxjIywWYCh3QECvQWCpAYBCDaDvgXQGDUheBvx7x6CBCzQthihfJWC8QODtgBDVxMJyDKwBC85NAhCEw6Cqx6o99kJZRFDBIqDWQhQERA5LwbAeDX93QjAAAeAAIycgAH4nI2InIAAuVyQgkwgQ1PWQrsZgZAh8dQ10ZoP8NkPw2A7wiQPwvQVAMYAUYnMNSiDwAYMJZoaiQg4I1Ap0Mg8sUEEI4I3QNkOsXA1ERgpgKWdgQCTFEeZmIcW4e0DmAoZI5cQoicccFsfImwOsZozgOiOAaQLQbozQe+XEdiLiHiLol0EI+0QEAYvQEAIY7iQgiY0I50DQDIlo7ggYvor+TIs0AYw-GCLQ2EHg7QzQgAe3SEfCnDyDt2uETmPm8DnhnwBWlHcj0FYDzEvHkDd1YAJjODkFYAfFYB8HkEBL+ICIQHdHcHkAhKIE4BZnmAADEtJzwRDPRDIQAAAlJAGiAASxogABc2I-ojAeJYShwQAESpxsRQ09J0TMScT8TCTiSdA5ByS9Big-JqSMTsS8SCSiTOAgA
+[sim6]: https://falstad.com/circuit/circuitjs.html?ctz=CQAgjOB0CsBsBM0CmBaA7OADJenPzTQGZMAOeWATkoyPhGhABYiHUwwAoANxBVMzgmTPgJCVYIQYKaDKUhdmicATnzogNTUpvqCweTJwDGzHVp1hhiyIbwQ0kUrKYFSV6CzADG2e5wBzMyERbXA0SWlA0X1rfn1YaSkecHhLRNSdeHgRQXpZQyhYRjBIYptlUzA08GrM3QVSu2aWsFQMFANIKyJXVzAiIjR4MAw-TC4AE2CNavN6ejAAOWg0Dk5puYbceZBFlbWuUx3tshCFeBx28TLSYtchxOzMCSlbCeit7JEv2UVVPbDbZAsAZQTQQycADugPoGhO8JSsFCYWRDDqeWYdiwijeymmJwIixqRL24AO602JKBYVJ+1W6yCtJpWT+UWOZ1BeTOpLyV3Qe26ZFgBkId08Bgob38MJOVhEcrB0UV+koizByVlIIyKuSalJXNhRsEJDw0KNdJ5QKMvFgNNedvyGhNWDwUBKMAqnFk8mElgiDADo0kEGwkWl8CIBhaLQW5pIPx12qiMOgdXl6LhenNaazRudObqJ1zxsLCyBCdLqaDAdWIYx5r9tXyYUNRjUTY4Wf0GL2g3bgfrLcsvYGaqMMLoPfL6pTzFbas0sCyZyM00rhsrhPJDK4ai3Zy31tdZsnmAVQLp1oBRGXe0Pzj2bPAEjN+7vCPP950+jsnCGgjxA0KAaLM4B6vUXaQRquAAhmgxDkuP73iY9QGtYCGNO8MatNcKCXM4QwSGg0BEKRlBRqG7xcAAzjE4iSEBzoKAAZgAhgANjRSCcGA0DyFBG51LeyEQNGOGoaBX5aKCFz8rQOCkGgmBpnxEyrM4qzSh8k75LJnSSEwskTg0ladEW15BAZzD6bJTZzigaJgIuYQFnxAnCXeUEsIs4HiTG5qvJhrwFJqzbMKBemROaaJNiFbpGEEaIlmEJZzoJ0lwl+Nrfpoj6kkQj4uuJ7qldIMDKg+PyLoVuTJLIEBpOYd6hSJ4GkAAOjRfFdZ00Bdf5eBdZcLBoEw1CkJQ3hKXgTCwF12BRiMSnjZQTD8a4CD9d1zRSMNmADThbpgAtKQIre+YXS6uDYqUHq+HilXmBdzlwldYUFRdTV5bkAKtS1bqVr+p5YiaX7md2EH-TooU+Y0f6mLDWhuuN4ZtCg8iXJGaQ0ON1SJNoaLjFwTIo-F4K9iZyIyBodbzj+qF07FqJ1UwkBoOwgHYCMTARBMzyo5Q0DQHo1GNiz9PhSZTMiHTUFGHR1MRfQStkXorGcdxnCKzSGiOpoIuNCA7FcTxSX2pI+tpWF+tqyAquG1Tfx27VT5RCMjD4TyfydCSfySgqIBsZwIz0F78yAVsU4XCAAC2ACWAB2AAUbEoAARgANF1RCQEQACU0ThwbYcIneURWYJhsQ0h-xWYSQLF99DkIrgfDfLoLc5J37fdzkXcKj7hJsuajnVWHr0vtmMKdIuk-4X3I8z2iiCMYJbcDjX-d8CvcDw5wbFmDIqUBk2lie3xJ6FHd1DUBp633AMRRXwO2g0-kKPMf5f1iK7dOu9ySEiNf4XX-u9NmHNOj6G6GgTS2NoCkGFlNV4xNGxiDhm-H6YVMGuxwVdHMAZML-yKgQyQf9T5hCMAAJSPswZmMMxBJH9mUXEShzQFXyqQcwjtJIfkPF5DU6N5AoD8AgiiEQowTEwIMCgP4xaTgEWDRMUQ1BywDMUEMAZgZmlMBo8Ils97b30KgYRfg77uGGBtHIiBRb+CSoYv4ejV7-Dano4M9s94ZlDCAAA8gAVQACqcHTu3f2AYUDO0XEYEJ1lt7TQYDUaJ9s6reAWFGZIITnF5CmnsUgrAklGRDNYeAQtcm+GCVPUGNkFgUWSAAD3boMGywjyiuHyE+EAAAiAAMgAER8Z0rqLEAD2Kgc4ADUiCcAaUpTMfYMBpkYIPEASduBIBUAAF3WdnGiIFxnTL2IbPomgDDMAIMwDpAAFAA6gAWQORfDAIw16hA6dwYZHENlsQCEgLqnTJjDIAK7pw4uszpBzEAdEviLCAvsLnd2GQABzYrHRFXUaKAsRYijiABPLqxhAUqBUEgROGyHl5L2KU4gNSYYdJogAC3jixDZXV3mfO+TxB4g4jSbT2E-IwDS8YdOII1DAyzoAoBol8n5XV06Ao2VslQUJRkbPpQcoYSyWCaEoMfQyHSuANNIksjgDAIQ2VeX3dVYhRgQCIKU0YFqRBTMNb0Bgss7xaWWcnJghcGmwCoOAWZy5qoyA6coYZqRwBo2yDqm4ww7jOEhd8HVYxsLeKsJG1gJAFDZtYCUi48hWABsEAG1gCCFDlqzQ9MimgsAPQMIwKZhUGgADF02FBum6ToIAqFIBovHKVbFE7GB4s2ppbb4Zuk7ZHHtfaB1fOHaO8w8gJ3aPBNibtvb+2DsXZwIAA
