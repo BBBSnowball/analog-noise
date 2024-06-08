@@ -277,6 +277,29 @@ Well.... let the trolling begin :-D
                 - 1x ADC for VCC
                 - 2x ADC for outputs
                 - That is a lot!
+    - Any MCU with integrated DAC? That would be a lot easier.
+        - CH32V3xx, e.g. CH32V305FBP6 for $2
+        - CH32F103 for $1.60
+        - APM32F072CBT6 for $1.10
+        - GD32F303RCT6 for $1.40
+        - STM32F072CBT6 for $1.30 - why did I not see this in my previous search? -> Sorting by price is broken.
+            - $1 for >= 30 pcs. Could be ok.
+        - STM32 low-power - [several series](https://www.st.com/en/microcontrollers-microprocessors/stm32-ultra-low-power-mcus.html)
+            - STM32L0: Many have USB, all have 1 or 2 DAC, it seems -> no.
+            - [STM32L053](https://jlcpcb.com/partdetail/Stmicroelectronics-STM32L053R8T6/C79207): USB and 1x DAC, $1.7 or $1.4 for 30 pcs
+            - [STM32L072](https://jlcpcb.com/partdetail/Stmicroelectronics-STM32L072RBT6/C915968): USB and 2x DAC, $2 is too much
+            - F072 is much cheaper than L072. L072 needs about half as much current (if we keep frequency low) and that could be a relevant difference.
+            - U series doesn't seem to be available on JLC.
+        - Ok, go with STM32L053?
+    - External DAC.
+        - Many are with I2S but that is only available for CH32V303 or higher. We could maybe use SPI. They also have too much supply current.
+        - [GP8102](https://www.lcsc.com/product-detail/Digital-To-Analog-Converters-DACs_Guestgood-GP8102-F50-NH-SW_C5464820.html):
+          PWM to analog. 2 mA. $0.80, $0.60 for 30 pcs.
+        - [DAC7311](https://www.lcsc.com/product-detail/Digital-To-Analog-Converters-DACs_Texas-Instruments-DAC7311IDCKR_C128601.html):
+          150 uA. $0.93, $0.7 for 30 pcs
+        - That will be more expensive than larger MCU. We also have to consider cost for extended part.
+        - None that I found so far could be connected to the higher voltage.
+    - Ok, let's keep things simple: Use [STM32F072CBT6](https://jlcpcb.com/partdetail/Stmicroelectronics-STM32F072CBT6/C81720)
 
 
 [LP358]: https://www.ti.com/lit/ds/symlink/lp358.pdf?ts=1717468161669
