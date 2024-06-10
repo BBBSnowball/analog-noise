@@ -16,23 +16,16 @@ Well.... let the trolling begin :-D
 [1]: https://www.errorinstruments.com/a-85227938/bricky-format-standalone-box/po-passive-operator-drum-synth/
 
 
-## Resources
-
-- [Datasheet](https://www.wch-ic.com/downloads/CH32V203DS0_PDF.html)
-- [Reference Manual](https://www.wch-ic.com/downloads/CH32FV2x_V3xRM_PDF.html)
-- [Very useful information and example design](https://github.com/wuxx/nanoCH32V203)
-- [Also useful](https://github.com/openwch/ch32v20x)
-- [Programmer](https://github.com/ch32-rs/wchisp), eh, "analog configuration tool"
-
 ## Plan
 
 - MCU
     - internal oscillator (for low power)
-    - put into sleep until gate input is >=8 V
+    - put into sleep until gate input is high enough
+        - TODO: How to do hysteresis? STM32F072 can compare to internal 1.2V reference or 1/4, 1/2 or 3/4
+          of that. We could switch between those to adjust threshold.
     - at least to ADC channels, fast enough to sample both inputs with >=50 kHz
-    - CH32V2xx has two opamps, it seems
     - CRC32 unit might be useful for generating the noise (basically an LFSR).
-    - DAC would be great but PWM is ok.
+    - DAC would be great but PWM is ok (but more complex because of filter).
 - power: diode rectifier, LDO, MLCC
     - maybe another MLCC on Vbat (if available), MLCC [seems to be good enough][cap-discharge]
 - inputs:
@@ -47,10 +40,12 @@ Well.... let the trolling begin :-D
         - Use high-efficiency LEDs and reduce the current a lot.
     - maybe a button, potentiometer or encoder
     - USB - for ~~programming~~ analog configuring and trolling
-    - bootloader: pull PB8 high with VUSB (voltage divider! and solder jumper) or add a button
+    - bootloader:
+        - CH23V203: pull PB8 high with VUSB (voltage divider! and solder jumper) or add a button
+        - STM32F072: pull BOOT0 high
     - TRNG
     - one or more touch areas, "Theremin", also mix into the noise (if we don't have a TRNG)
-        - The MCU even has dedicated hardware for that. Nice!
+        - The MCU even has dedicated hardware for that. Nice! -> Still true after switching to STM.
     - IMS :-D
         - [LIS2DH12TR](https://jlcpcb.com/partdetail/Stmicroelectronics-LIS2DH12TR/C110926)
           is cheap and only consumes some uA. Well... I guess that means yes.
@@ -71,6 +66,8 @@ Well.... let the trolling begin :-D
     - "analog noise generator with gate": shrink tube, put in the middle of a patch cable
     - "analog multiplier with gate": Eurorack module cover (3D printed or wood), glue PCB to its back, three jacks
     - 3D printed case in cable, with two parts that can be rotated to set a value
+    - LQFP-48 is 9x9 mm with pins (7 mm for body). That is larger than I would like but smaller packages
+      are more expensive.
 
 [cap-discharge]: https://www.robotroom.com/Capacitor-Self-Discharge-2.html
 
@@ -80,7 +77,7 @@ Well.... let the trolling begin :-D
     - output will provide up to 1 mA at 10 kOhm impedance (plus what the amplifier needs).
     - We should expect to see up to 15 V continuous because 10 V is more like the minimum and
       many modules go up to 1..2 V below there supply of 12 V or 15 V.
-- How much delay after the gate is asserted?
+- How much delay after the gate is asserted? -> not updated for STM, yet
     - Startup time for oscillator alone is 2.5 ms. Internal HSI needs 10 us.
     - Let's expect a few ms overall and hope for the best.
     - It could be a lot less if gate rises slowly (we can start up before it reaches the
@@ -90,6 +87,13 @@ Well.... let the trolling begin :-D
     - https://github.com/metro94/FlappyBoard
     - I'm not sure which things on the board may be notices according to OHL but we will
       probably only copy the schematic anyway.
+    - https://github.com/Jana-Marie/OtterPill
+    - Use SY8201?
+        - 0.4 mA quiescent current will be 3 mW at 7 V. LDO would waste 11 mW at 7 V.
+        - We would have to use lower caps.
+        - LDO is simpler+cheaper and good enough, we think.
+    - Well, if we use neither SY8201 nor FUSB and we use STM32 symbol from Kicad libraries,
+      there isn't anything to copy from OtterPill.
 - Which LDO?
     - There don't seem to be any basic parts in category power.
     - More than 15 V (with some margin). Reasonable quiescent current.
@@ -97,7 +101,7 @@ Well.... let the trolling begin :-D
     - [LR8321A-T33](https://www.lcsc.com/product-detail/Linear-Voltage-Regulators-LDO_LR-LR-LR8321A-T33_C5129918.html),
       [vendor page](https://www.lorysemi.com/product/80b8478f710f4a6b9008f729313d2654/a9d765514f14408ab45c6008f1d1d0b4):
       100 mA, 250 mW
-- Pinout planning - assuming that we use the QFN28 package.
+- Pinout planning - assuming that we use the QFN28 package. -> This was for CH32.
     - fixed:
         - 4x power
         - 2x crystal
@@ -110,7 +114,7 @@ Well.... let the trolling begin :-D
         - PB0..PB1 (ADC)
             - PA2..PB1 are also used for the opamps.
             - Touch uses the ADC pins.
-            - Can all ADC inputs be connected to either of the two ADCs?
+            - //Can all ADC inputs be connected to either of the two ADCs? -> We only have one for STM.
         - PA9
         - PA15
         - PB3..PB7
@@ -118,7 +122,7 @@ Well.... let the trolling begin :-D
             - PB5 is `I2C_SMBA` (SMBus Alert), which we don't need.
         - summary: 9x ADC, 7x GPIO (including I2C)
     - needed:
-        - 2x I2C -> PB6 and PB7
+        - 2x I2C
         - 1x wakeup+gate -> PA0 (WKUP and ADC0)
         - 2x input (ADC)
         - voltage doubler / inverter
@@ -141,12 +145,49 @@ Well.... let the trolling begin :-D
             - We can use BOOT0 pin but not as three-state.
         - 0x button ?
         - 1x poti ?
+- Pinout planning for STM32F072CBT6 (LQFP-48):
+    - fixed:
+        - 1: VBAT (nice - we have that available here)
+        - 3,4: OSC32
+        - 5,6: OSC
+        - 7: NRST
+        - 8,9: analog power
+        - 14, 15: DAC
+        - 23, 24: power
+        - 32, 33: USB
+        - 34: SWDIO
+        - 35, 36: power
+        - 37: SWCLK
+        - 44: BOOT0
+        - 47, 48: power
+    - usable:
+        - 2, 10, 11, 12, 13, 16, 17, 18, 19, 20, 21, 22, 26..31, 38..43, 45, 46
+        - 26x ^^
+    - comparator:
+        - outputs are fixed
+        - inputs can be on several pins or Vref (1.25V or 1/4, 2/4, 3/4 of that),
+          Vref can be connected to negative input
+        - COMP1: input is PA1, output is PA0, which is also WKUP
+        - COMP output can also go to EXTI, which is also a wakeup source from most modes.
+    - I2C:
+        - PB10, PB11 (I2C2)
+        - PB13, PB14 (I2C2)
+        - PB6, PB7   (I2C1)
+        - PB8, PB9   (I2C1)
+    - SPI:
+        - PA4..PA7 (SPI1)
+        - PB10, ..?
+        - PB12..PB15 (SPI2)
+            - PB13: SCK, SCL  -> IMS also has them on the same pin.
+            - PB14: MISO, SDA -> IMS has SDA and MOSI on the same pin.
+        - PA15 or PB9, PB3..PB5 (SPI1)
 
 ### TODO
 
 - Can CH32V2xx run its USB bootloader from internal crystal or should we add an external one?
     - Well, let's add the external one and hopefully not use it (but it doesn't really need
       more power than HSI, to be honest).
+    - STM32F072 can definetely do it without the crystal.
 - Low-power OpAmp for output or transistor amplifier?
     - Rail-to-rail would be useful. That should be easier with an integrated part.
     - There are lots of low power amplifiers, e.g. [LP358][LP358]. They are below 100 uA.
@@ -180,12 +221,13 @@ Well.... let the trolling begin :-D
     - Store previous seed in RTC memory.
     - IMS.
 - Connect VBAT?
-    - It would be nice to have the RTC available but dedicated VBAT is only available on the
+    - //It would be nice to have the RTC available but dedicated VBAT is only available on the
       larger packages.
     - Alternative: Not much connected to 3.3V supply, diode in series to LDO. Stop and standby
       don't use more current than RTC according to datasheet. Downside: It needs programming
       discipline and we have to power down anything that we connect to that supply (or
       power it through an IO pin).
+    - It is available for STM. Yes, let's connect it.
 - What do we do about negative voltages?
     - We will usually get a gate signal with 0 V and 10 V, I assume. And we have GND. We can add a
       negative voltage rail but it won't usually be charged.
@@ -193,16 +235,29 @@ Well.... let the trolling begin :-D
       be GND in our case.
     - Simple switched capacitor voltage inverter to at least have -2.9 V? -> Probably a good idea.
 - How much capacity for power buffer? How to connect it?
-    - Long enough to provide useful time for RTC. MCU and IMS will draw some tens of uA.
+    - //Long enough to provide useful time for RTC. MCU and IMS will draw some tens of uA.
         - Starting at 3.3 V. Normal operating range is down to 2.4 V. RTC can work down to
           1.8 V (when powered through VBAT).
         - Example: 1 uF = 50uA*t/(3.3V-2.4V) => t = 0.018 sec => not so great
+    - STM32: 2 uA on Vbat with LSE. Works down to at least 1.65 V.
+        - Example: 1 uF =  2uA*t/(3.3V-1.65V) => t = 0.8 sec => usable but not great
+        - Typical values are more like 1 uA and half that at lower voltage, i.e. let's assume 2 sec.
+        - We can use more capacity but we have to be smart about charging it, e.g. GPIO -> diode and resistor -> cap -> diode -> Vbat.
+        - If we have 1% duty cycle, we should charge with 100x 2 uA, i.e. 200 uA. Ok, we could do that without controlling it with a GPIO.
+          8 kOhm would achieve that but draw 400 uA when the cap is empty but we will lose some
+          power through it when drawing current from the cap (but voltage drop is only 20 mV,
+          i.e. not an issue and a diode would lose more power).
+        - So... 100 nF on Vbat plus maybe 10 uF connected via 10 kOhm.
+        - What can we use it for? Store random seed and wakup main MCU (but that needs main power
+          anyway).
+        - Ok, let's not put too much effort here: Use LSI instead of LSE (although we have no idea
+          how much power that costs). 100 nF + 10 + 1 or 10 uF
     - Long enough to switch MCU to low-power mode, e.g. a few ms. Maybe long enough to continue
       working for a few ms to compensate startup delay.
         - Let's plan with 5 mA and 10 ms.
         - Voltage can go from 10 V to 5 V but that will be noticed in the output signal, of course.
         - That would be 10 uF. That is reasonable.
-        - However... how long would it take to charge this? tau = 100 ms. Not great.
+        - However... how long would it take to charge this? tau = 10 ms. Not great.
     - Another issue: We cannot set our gate threshold to 8 V because we will see less voltage
       while we are drawing power or even charging the capacitor.
         - If we draw 5 mA, we will see half the voltage. Not only for the gate but also for the
@@ -300,6 +355,7 @@ Well.... let the trolling begin :-D
         - That will be more expensive than larger MCU. We also have to consider cost for extended part.
         - None that I found so far could be connected to the higher voltage.
     - Ok, let's keep things simple: Use [STM32F072CBT6](https://jlcpcb.com/partdetail/Stmicroelectronics-STM32F072CBT6/C81720)
+    - We should use 1 uF for the caps.
 
 
 [LP358]: https://www.ti.com/lit/ds/symlink/lp358.pdf?ts=1717468161669
