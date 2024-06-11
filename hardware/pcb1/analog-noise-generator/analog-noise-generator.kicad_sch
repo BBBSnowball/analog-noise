@@ -2856,6 +2856,10 @@
     (stroke (width 0) (type default))
     (uuid e2c8c480-1ace-45cc-bee8-c060e2fae379)
   )
+  (wire (pts (xy 55.88 54.61) (xy 57.15 54.61))
+    (stroke (width 0) (type default))
+    (uuid e4e1ebcf-de49-4a00-beaa-8f598b7c0431)
+  )
   (wire (pts (xy 58.42 111.76) (xy 64.77 111.76))
     (stroke (width 0) (type default))
     (uuid e5253b1f-1543-4058-881e-7344c1c03bd7)
@@ -4712,6 +4716,31 @@
     )
   )
 
+  (symbol (lib_id "Connector:TestPoint_Probe") (at 57.15 54.61 0) (mirror x) (unit 1)
+    (in_bom no) (on_board yes) (dnp no)
+    (uuid 6605d9d5-b3b7-45e7-833f-684eea11717b)
+    (property "Reference" "TP5" (at 60.96 58.42 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Value" "-V" (at 60.96 55.88 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Footprint" "analog-noise-generator:TestPoint_THTPad_small" (at 62.23 54.61 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "~" (at 62.23 54.61 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid 2da8ca6e-3fab-477f-8ef0-e28facd4bdd1))
+    (instances
+      (project "analog-noise-generator"
+        (path "/e71fa5ad-0f80-45ec-aa84-70ffc489027a"
+          (reference "TP5") (unit 1)
+        )
+      )
+    )
+  )
+
   (symbol (lib_id "power:GND") (at 138.43 27.94 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 68abdaaa-c48e-44ae-a4e4-93ee09c527f0)
@@ -5650,6 +5679,31 @@
       (project "analog-noise-generator"
         (path "/e71fa5ad-0f80-45ec-aa84-70ffc489027a"
           (reference "J3") (unit 1)
+        )
+      )
+    )
+  )
+
+  (symbol (lib_id "Connector:TestPoint_Probe") (at 55.88 22.86 0) (unit 1)
+    (in_bom no) (on_board yes) (dnp no)
+    (uuid a8fe3b30-9be5-4dba-b673-045691f49b3f)
+    (property "Reference" "TP4" (at 59.69 19.05 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Value" "+V" (at 59.69 21.59 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Footprint" "analog-noise-generator:TestPoint_THTPad_small" (at 60.96 22.86 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "~" (at 60.96 22.86 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid 6d7404aa-217e-4e40-a0d0-17797a60fa7b))
+    (instances
+      (project "analog-noise-generator"
+        (path "/e71fa5ad-0f80-45ec-aa84-70ffc489027a"
+          (reference "TP4") (unit 1)
         )
       )
     )
@@ -6759,31 +6813,6 @@
       (project "analog-noise-generator"
         (path "/e71fa5ad-0f80-45ec-aa84-70ffc489027a"
           (reference "JP6") (unit 1)
-        )
-      )
-    )
-  )
-
-  (symbol (lib_id "Connector:TestPoint_Probe") (at 38.1 22.86 0) (mirror y) (unit 1)
-    (in_bom no) (on_board yes) (dnp no)
-    (uuid fa1f368d-dbab-4b85-9b48-e8df046d8a82)
-    (property "Reference" "TP4" (at 34.29 19.05 0)
-      (effects (font (size 1.27 1.27)) (justify left))
-    )
-    (property "Value" "VIN" (at 34.29 21.59 0)
-      (effects (font (size 1.27 1.27)) (justify left))
-    )
-    (property "Footprint" "analog-noise-generator:TestPoint_THTPad_small" (at 33.02 22.86 0)
-      (effects (font (size 1.27 1.27)) hide)
-    )
-    (property "Datasheet" "~" (at 33.02 22.86 0)
-      (effects (font (size 1.27 1.27)) hide)
-    )
-    (pin "1" (uuid 25712be3-b021-444b-acda-5d92415a7dcf))
-    (instances
-      (project "analog-noise-generator"
-        (path "/e71fa5ad-0f80-45ec-aa84-70ffc489027a"
-          (reference "TP4") (unit 1)
         )
       )
     )
