@@ -374,6 +374,8 @@ Well.... let the trolling begin :-D
     - [The simulation][sim8] has 7V and 100 kHz with 4% duty cycle, i.e. 0.4 us, but the inductor goes up to 27 mA. This is fishy!
     - This could probably work but we would have to simulate with NGspice or LTspice to verify.
     - Let's omit it, for now.
+    - Let's keep it very simple and not even support negative gate voltage.
+    - If we want to measure (but not output) negative voltage on VIN, we have to connect it to IN2.
 
 
 [LP358]: https://www.ti.com/lit/ds/symlink/lp358.pdf?ts=1717468161669
