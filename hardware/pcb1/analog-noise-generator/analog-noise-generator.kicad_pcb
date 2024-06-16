@@ -458,7 +458,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp 37e1c0ed-3a8c-42c2-93c7-7ff0ef9a0c25)
-    (at 122.3136 108.1748)
+    (at 113.665 97.663)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC" "C25744")
@@ -568,7 +568,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp 3adcda24-ae53-4593-b169-d3736a8d9352)
-    (at 122.3136 110.1648)
+    (at 115.697 97.663)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC" "C25744")
@@ -943,7 +943,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp 528373c7-2b2f-464c-bccd-32ac970722ac)
-    (at 123.698 89.746)
+    (at 115.824 92.837)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC" "C25765")
@@ -1263,7 +1263,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp 55e3fe1f-a911-40e0-8f36-6281c14e0549)
-    (at 122.3136 106.1848)
+    (at 111.633 97.663)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC" "C25744")
@@ -1873,7 +1873,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp 73823cc7-b79c-4213-9c23-8926df17ad3b)
-    (at 120.65 102.235)
+    (at 109.601 97.663)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC" "C25744")
@@ -1928,7 +1928,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp 78997d39-3355-4aad-9ffe-4040c1110954)
-    (at 123.698 87.756)
+    (at 115.824 90.847)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC" "C25905")
@@ -2061,7 +2061,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp 80a37f78-358b-4ec2-bad3-d00e6b737d69)
-    (at 122.3136 112.1548)
+    (at 114.681 96.52)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC" "C25744")
@@ -2171,7 +2171,7 @@
 
   (footprint "analog-noise-generator:TestPoint_THTPad_small" (layer "F.Cu")
     (tstamp 8a635b8b-2a1c-434d-8cd2-44244a1b6f56)
-    (at 126.238 86.091)
+    (at 111.379 92.583)
     (descr "THT rectangular pad as test Point, square 1.0mm side length, hole diameter 0.5mm")
     (tags "test point THT pad rectangle square")
     (property "Sheetfile" "analog-noise-generator.kicad_sch")
@@ -2915,7 +2915,7 @@
 
   (footprint "Resistor_SMD:R_0402_1005Metric" (layer "F.Cu")
     (tstamp c17de99b-528e-4322-88b6-c3cd4d3d3c9c)
-    (at 120.65 100.245)
+    (at 107.569 97.663)
     (descr "Resistor SMD 0402 (1005 Metric), square (rectangular) end terminal, IPC_7351 nominal, (Body size source: IPC-SM-782 page 72, https://www.pcb-3d.com/wordpress/wp-content/uploads/ipc-sm-782a_amendment_1_and_2.pdf), generated with kicad-footprint-generator")
     (tags "resistor")
     (property "LCSC" "C25744")
