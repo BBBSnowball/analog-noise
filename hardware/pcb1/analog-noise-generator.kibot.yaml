@@ -1,0 +1,24 @@
+kibot:
+  version: 1
+
+import:
+  - file: ../kibot.common.yaml
+
+outputs:
+- name: basic_qr_lib
+  comment: QR code symbol and footprint
+  type: qr_lib
+  dir: QR_libs
+  options:
+    qrs:
+    - correction_level: medium
+      name: QR_git_11
+      pcb_negative: true
+      size_pcb: 11
+      text: https://github.com/BBBSnowball/analog-noise
+    - correction_level: medium
+      name: QR_git_3.8
+      pcb_negative: true
+      size_pcb: 3.8
+      text: https://github.com/BBBSnowball/analog-noise
+    use_sch_dir: false
