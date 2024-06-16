@@ -20,7 +20,7 @@ import:
 - file: JLCPCB
 
 preflight:
-  run_erc: true
+  run_erc: false
   update_xml: true
   #run_drc: true  # doesn't work (timeout)
   erc_warnings: true

@@ -1,0 +1,9 @@
+# KiBot
+.cache/
+/*/generated/PCB/*/[0-9]*
+/*/generated/Manufacturers/JLCPCB/*
+!/*/generated/Manufacturers/JLCPCB/*.csv
+/*/generated/diff/
+/*/generated/*-info.txt
+/*/generated/*.ogv
+/*/generated/*/*.ogv
