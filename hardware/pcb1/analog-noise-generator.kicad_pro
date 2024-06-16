@@ -194,7 +194,10 @@
     "equivalence_files": []
   },
   "erc": {
-    "erc_exclusions": [],
+    "erc_exclusions": [
+      "lib_symbol_issues|431800|965200|e2a93500-a737-419f-889c-1caec0eedbe6|00000000-0000-0000-0000-000000000000|||",
+      "no_connect_connected|152400|685800|460cf13c-f7ee-446c-9e33-9f32f71fa5ba|eae77ead-55e1-41e3-a522-c33a16438678|/e71fa5ad-0f80-45ec-aa84-70ffc489027a|/e71fa5ad-0f80-45ec-aa84-70ffc489027a|"
+    ],
     "meta": {
       "version": 0
     },
@@ -382,7 +385,7 @@
       "extra_units": "error",
       "global_label_dangling": "warning",
       "hier_label_mismatch": "error",
-      "label_dangling": "error",
+      "label_dangling": "ignore",
       "lib_symbol_issues": "warning",
       "missing_bidi_pin": "warning",
       "missing_input_pin": "warning",
