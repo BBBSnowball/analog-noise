@@ -152,6 +152,12 @@ outputs:
   - layer: B.Cu
     suffix: B_Cu
     description: Bottom copper
+  - In1.Cu
+  - In2.Cu
+  - In3.Cu
+  - In4.Cu
+  - In5.Cu
+  - In6.Cu
   - layer: F.Paste
     suffix: F_Paste
     description: Front solder paste
