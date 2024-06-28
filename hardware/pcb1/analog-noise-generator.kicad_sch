@@ -8785,6 +8785,31 @@
     )
   )
 
+  (symbol (lib_id "Connector:TestPoint_Probe") (at 242.57 127 0) (unit 1)
+    (in_bom no) (on_board yes) (dnp no)
+    (uuid e7b61ee4-95a6-41fa-aa02-231bc6a7476a)
+    (property "Reference" "TP12" (at 246.38 123.19 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Value" "3V3" (at 246.38 125.73 0)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Footprint" "TestPoint:TestPoint_Pad_1.0x1.0mm" (at 247.65 127 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "~" (at 247.65 127 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid 25702905-0eee-4298-bcea-294d4e783a13))
+    (instances
+      (project "analog-noise-generator"
+        (path "/e71fa5ad-0f80-45ec-aa84-70ffc489027a"
+          (reference "TP12") (unit 1)
+        )
+      )
+    )
+  )
+
   (symbol (lib_id "Device:R") (at 96.52 49.53 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid e8851d27-0ab5-42c6-a0d3-21b042069e35)
@@ -9117,6 +9142,31 @@
       (project "analog-noise-generator"
         (path "/e71fa5ad-0f80-45ec-aa84-70ffc489027a"
           (reference "#FLG09") (unit 1)
+        )
+      )
+    )
+  )
+
+  (symbol (lib_id "power:+3.3V") (at 242.57 127 90) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid fa1effe0-2a84-4295-aa3b-e0ea1d2476c0)
+    (property "Reference" "#PWR077" (at 246.38 127 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Value" "+3.3V" (at 239.395 127 90)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Footprint" "" (at 242.57 127 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "" (at 242.57 127 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid b360cad8-dbe2-43e9-b00e-1f738140c41e))
+    (instances
+      (project "analog-noise-generator"
+        (path "/e71fa5ad-0f80-45ec-aa84-70ffc489027a"
+          (reference "#PWR077") (unit 1)
         )
       )
     )
