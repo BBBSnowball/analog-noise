@@ -1,6 +1,7 @@
 "Comment","Designator","Footprint","LCSC Part #"
 "220p","C13,C14,C15,C18","C_0402_1005Metric","C1530"
-"100n","C1,C2,C3,C4,C5,C11,C12","C_0402_1005Metric","C1525 C307331"
+"100n","C1,C2,C3,C4,C5,C11","C_0402_1005Metric","C1525"
+"50V, 100.01 nF","C12","C_0402_1005Metric","C307331"
 "1u, 25V","C20,C21","C_0402_1005Metric","C52923"
 "2u2, 4V","C8","C_0402_1005Metric","C12530"
 "10u, 4V","C6","C_0402_1005Metric","C15525"

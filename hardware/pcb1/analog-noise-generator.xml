@@ -2,7 +2,7 @@
 <export version="E">
   <design>
     <source>/home/user/projects/analog-noise-generator/hardware/pcb1/analog-noise-generator.kicad_sch</source>
-    <date>2024-06-29T00:04:51 CEST</date>
+    <date>2024-06-29T01:07:00 CEST</date>
     <tool>Eeschema 7.0.9</tool>
     <sheet number="1" name="/" tstamps="/">
       <title_block>
@@ -198,7 +198,7 @@
       <tstamps>7262eb11-80a2-48ed-a573-4a3390687de9</tstamps>
     </comp>
     <comp ref="C12">
-      <value>100n, 50V</value>
+      <value>50V, 100.01 nF</value>
       <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
       <fields>
         <field name="LCSC">C307331</field>
@@ -258,7 +258,7 @@
       <tstamps>8f1d5ef6-cfc4-4f0a-92d2-99893cabc8f6</tstamps>
     </comp>
     <comp ref="C16">
-      <value>100n, 50V</value>
+      <value>50V, 100.01 nF</value>
       <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
       <fields>
         <field name="LCSC">C307331</field>
@@ -276,7 +276,7 @@
       <tstamps>f437bba6-4668-4e6b-8b30-3ee6327a7d7c</tstamps>
     </comp>
     <comp ref="C17">
-      <value>100n, 50V</value>
+      <value>50V, 100.01 nF</value>
       <footprint>Capacitor_SMD:C_0402_1005Metric</footprint>
       <fields>
         <field name="LCSC">C307331</field>

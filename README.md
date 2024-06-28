@@ -15,6 +15,8 @@ Well.... let the trolling begin :-D
 
 [1]: https://www.errorinstruments.com/a-85227938/bricky-format-standalone-box/po-passive-operator-drum-synth/
 
+![Rendered PCB](./hardware/pcb1/generated/3D/analog-noise-generator-3D_top30deg.png)
+
 
 ## Plan
 

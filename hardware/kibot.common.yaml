@@ -62,6 +62,7 @@ filters:
       - [ "^SOT-563", 180 ]
       - [ "^PinHeader_", 270 ]
       - [ "^IDC-Header_", 270 ]
+      - [ "^SOT-23-6", 270 ]
 
 outputs:
 - name: ibom
