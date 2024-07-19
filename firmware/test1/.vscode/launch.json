@@ -25,6 +25,8 @@
                 "monitor flash write_image erase ./target/thumbv6m-none-eabi/debug/analog-noise-test1.bin 0x08000000",
                 // Things are a bit more complicated for us because we will boot to bootloader while USB is attached.
                 "b *0x1fffcc28",  // breakpoint on bootloader
+
+                "monitor arm semihosting enable",
             ],
             //"postLaunchCommands": ["continue"], // Don't stop before at the first line
             "overrideLaunchCommands": [
@@ -49,21 +51,6 @@
             ],
 
             "gdbPath": "gdb",
-        },
-        {
-            "preLaunchTask": "build",
-            "type": "probe-rs-debug",
-            "request": "launch",
-            "name": "probe_rs Executable Test",
-            "flashingConfig": {
-            "flashingEnabled": true,
-            },
-            "chip": "STM32F072CBTx",
-            "coreConfigs": [
-            {
-                "programBinary": "${workspaceFolder}/target/thumbv6m-none-eabi/debug/analog-noise-test1"
-            }
-            ]
         },
     ]
 }
