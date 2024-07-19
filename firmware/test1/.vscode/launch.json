@@ -44,9 +44,26 @@
                 "set $pc = $flash[0][1]",
                 "set $msp = $flash[0][0]",
                 "info reg",
+                //"monitor rtt setup 0x20000000 100 0",
+                //"monitor rtt start",
             ],
 
             "gdbPath": "gdb",
-        }
+        },
+        {
+            "preLaunchTask": "build",
+            "type": "probe-rs-debug",
+            "request": "launch",
+            "name": "probe_rs Executable Test",
+            "flashingConfig": {
+            "flashingEnabled": true,
+            },
+            "chip": "STM32F072CBTx",
+            "coreConfigs": [
+            {
+                "programBinary": "${workspaceFolder}/target/thumbv6m-none-eabi/debug/analog-noise-test1"
+            }
+            ]
+        },
     ]
 }
