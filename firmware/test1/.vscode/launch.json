@@ -1,0 +1,52 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            // see https://s2e-systems.github.io/Debugging-embedded-Rust-programs-using-VS-Code/
+            "name": "Cortex Debug",
+            "cwd": "${workspaceFolder}",
+            //"preLaunchTask": "rust: cargo build",
+            "preLaunchTask": "build",
+            "executable": "${workspaceFolder}/target/thumbv6m-none-eabi/debug/analog-noise-test1",
+            "request": "launch",
+            "type": "cortex-debug",
+            //"runToEntryPoint": "main",
+
+            "svdFile": "${workspaceFolder}/STM32F0x2.svd",
+            "servertype": "openocd",
+            "configFiles": ["interface/cmsis-dap.cfg", "target/stm32f0x.cfg"],
+            "preLaunchCommands": [
+                "monitor init",
+                "monitor reset init",
+                "monitor halt",
+                "monitor flash write_image erase ./target/thumbv6m-none-eabi/debug/analog-noise-test1.bin 0x08000000",
+                // Things are a bit more complicated for us because we will boot to bootloader while USB is attached.
+                "b *0x1fffcc28",  // breakpoint on bootloader
+            ],
+            //"postLaunchCommands": ["continue"], // Don't stop before at the first line
+            "overrideLaunchCommands": [
+                // Things are a bit more complicated for us because we will boot to bootloader while USB is attached.
+                //"interrupt",
+                "set language rust",  // auto-detection does the same but let's play it save
+                "set $flash = 0x08000000 as *[u32; 2]",
+                "set $pc = $flash[0][1]",
+                "set $msp = $flash[0][0]",
+                "info reg",
+            ],
+            "overrideRestartCommands": [
+                // Things are a bit more complicated for us because we will boot to bootloader while USB is attached.
+                //"interrupt",
+                "set language rust",  // auto-detection does the same but let's play it save
+                "set $flash = 0x08000000 as *[u32; 2]",
+                "set $pc = $flash[0][1]",
+                "set $msp = $flash[0][0]",
+                "info reg",
+            ],
+
+            "gdbPath": "gdb",
+        }
+    ]
+}

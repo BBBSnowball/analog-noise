@@ -165,6 +165,7 @@
           rust = with flakePkgs; pkgs.mkShell rec {
             passthru.packages = with pkgs; [
               rustup udev.dev pkg-config openssl.dev picotool
+              openocd
             ];
             passthru.pythonPackages = p: with p; [ pyserial ];
             passthru.python = python3.withPackages passthru.pythonPackages;
