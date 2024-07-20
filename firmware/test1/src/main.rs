@@ -17,9 +17,32 @@ mod usb_serial;
 use rtt_target::rprintln;
 use stm32f0xx_hal as hal;
 pub use stm32f0xx_hal::pac as pac;
+use crate::hal::delay::Delay;
+use crate::hal::gpio::*;
 use crate::hal::prelude::*;
 
 use cortex_m_rt::entry;
+
+fn test_pwm(led2: gpiob::PB3<Input<Floating>>, led3: gpiob::PB4<Input<Floating>>, tim2: pac::TIM2, tim3: pac::TIM3, rcc: &mut hal::rcc::Rcc, delay: &mut Delay) {
+    let (led2, led3) = cortex_m::interrupt::free(move |cs| {
+        (
+            led2.into_alternate_af2(cs),
+            led3.into_alternate_af1(cs),
+        )
+    });
+
+    //let pwm2 = hal::pwm::tim2(tim2, led2, rcc, 20u32.khz());
+    let mut led3 = hal::pwm::tim3(tim3, led3, rcc, 20u32.khz());
+    let max_duty = led3.get_max_duty();  // 2400
+    led3.set_duty(max_duty / 2);
+    led3.enable();
+    for _ in 0..4 {
+        for i in 0..max_duty {
+            led3.set_duty(i);
+            delay.delay_ms(1_u16);
+        }
+    }
+}
 
 #[entry]
 fn main() -> ! {
@@ -65,6 +88,10 @@ fn main() -> ! {
         .freeze(&mut dp.FLASH);
     let gpioa = dp.GPIOA.split(&mut rcc);
     let gpiob = dp.GPIOB.split(&mut rcc);
+
+    let mut delay = Delay::new(cp.SYST, &rcc);
+
+    test_pwm(gpiob.pb3, gpiob.pb4, dp.TIM2, dp.TIM3, &mut rcc, &mut delay);
 
     let mut ims = ims::IMS::new(gpiob.pb12, gpioa.pa9, gpiob.pb13, gpiob.pb14, gpiob.pb15, dp.SPI2, &mut rcc); 
     if let Err(err) = ims::test_ims(&mut ims) {
