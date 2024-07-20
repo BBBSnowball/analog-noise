@@ -9,10 +9,9 @@ use crate::hal::{
     spi::Spi,
     spi::{Mode, Phase, Polarity, EightBit},
 };
-use core::{cell::RefCell, convert::Infallible, fmt::Write, ops::DerefMut};
+use core::{cell::RefCell, convert::Infallible, ops::DerefMut};
 use cortex_m::interrupt::Mutex;
-use cortex_m_semihosting::hio::HostStream;
-use rtt_target::UpChannel;
+use rtt_target::{UpChannel, rprintln};
 
 type CS<MODE> = PB12<MODE>;
 type SCK<MODE> = PB13<MODE>;
@@ -35,19 +34,12 @@ pub struct IMS {
 pub enum Error {
     SpiError(spi::Error),
     PinError(Infallible),
-    FormatError(core::fmt::Error),
     WrongId,
 }
 
 impl From<spi::Error> for Error {
     fn from(error: spi::Error) -> Self {
         Error::SpiError(error)
-    }
-}
-
-impl From<core::fmt::Error> for Error {
-    fn from(error: core::fmt::Error) -> Self {
-        Error::FormatError(error)
     }
 }
 
@@ -135,16 +127,16 @@ impl IMS {
     }
 }
 
-pub fn test_ims(mut stdout: HostStream, ims: &mut IMS) -> Result<(), Error> {
+pub fn test_ims(ims: &mut IMS) -> Result<(), Error> {
     let who_am_i = ims.read(0x0f);
     if let Ok(who_am_i) = who_am_i {
-        write!(stdout, "IMS, WHO_AM_I: {:x}\r\n", who_am_i)?;
+        rprintln!("IMS, WHO_AM_I: {:x}", who_am_i);
         if who_am_i != 0x33 {
-            write!(stdout, "IMS: ERROR: ID is not as expected\r\n")?;
+            rprintln!("IMS: ERROR: ID is not as expected");
             return Err(Error::WrongId)
         }
     } else {
-        write!(stdout, "IMS, WHO_AM_I: error\r\n")?;
+        rprintln!("IMS, WHO_AM_I: error");
         return Err(Error::WrongId)
     }
 
@@ -176,15 +168,15 @@ pub fn test_ims(mut stdout: HostStream, ims: &mut IMS) -> Result<(), Error> {
             // (and temp[0] will be 0 because of low-power mode)
             let mut temp = [0; 2];
             ims.read_auto_inc(0x0c, &mut temp)?;
-            write!(stdout, "TEMP: {:02x}{:02x}\r\n", temp[1], temp[0])?;
+            rprintln!("TEMP: {:02x}{:02x}", temp[1], temp[0]);
 
             let mut data = [0; 9];
             ims.read_auto_inc(0x27, &mut data)?;
-            write!(stdout, "STATUS_REG: {:02x}\r\n", data[0])?;
-            write!(stdout, "OUT_X: {:02x}{:02x}\r\n", data[2], data[1])?;
-            write!(stdout, "OUT_Y: {:02x}{:02x}\r\n", data[4], data[3])?;
-            write!(stdout, "OUT_Z: {:02x}{:02x}\r\n", data[6], data[5])?;
-            write!(stdout, "FIFO REGS: {:02x}, {:02x}\r\n", data[7], data[8])?;
+            rprintln!("STATUS_REG: {:02x}", data[0]);
+            rprintln!("OUT_X: {:02x}{:02x}", data[2], data[1]);
+            rprintln!("OUT_Y: {:02x}{:02x}", data[4], data[3]);
+            rprintln!("OUT_Z: {:02x}{:02x}", data[6], data[5]);
+            rprintln!("FIFO REGS: {:02x}, {:02x}", data[7], data[8]);
         }
     }
 

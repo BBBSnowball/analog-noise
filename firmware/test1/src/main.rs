@@ -2,11 +2,8 @@
 #![no_main]
 
 extern crate panic_halt;
-//extern crate panic_semihosting;
 extern crate cortex_m;
 extern crate cortex_m_rt;
-extern crate cortex_m_semihosting;
-//extern crate defmt_rtt;
 extern crate rtt_target;
 extern crate stm32f0xx_hal;
 extern crate usb_device;
@@ -19,22 +16,12 @@ mod usb_serial;
 use rtt_target::rprintln;
 use stm32f0xx_hal as hal;
 pub use stm32f0xx_hal::pac as pac;
+use crate::hal::prelude::*;
 
 use cortex_m_rt::entry;
-//#[allow(unused_imports)]
-//use defmt_rtt as _;
-//use stm32f0xx_hal::pac::STK;
-
-use cortex_m_semihosting::hio;
-use core::fmt::Write;
-use crate::hal::prelude::*;
 
 #[entry]
 fn main() -> ! {
-    let mut stdout = hio::hstdout().map_err(|_| core::fmt::Error).unwrap();
-    let num = 42;
-    write!(stdout, "Answer: {}\r\n", num).unwrap();
-
     let channels = rtt_target::rtt_init! {
         up: {
             0: {
@@ -60,7 +47,9 @@ fn main() -> ! {
         }
     };
     rtt_target::set_print_channel(channels.up.0);
-    rprintln!("Test of println to RTT");
+    let num = 42;
+    rprintln!("Answer: {}", num);
+
 
     let mut dp = pac::Peripherals::take().unwrap();
     let mut cp = cortex_m::peripheral::Peripherals::take().unwrap();
@@ -77,8 +66,8 @@ fn main() -> ! {
     let gpiob = dp.GPIOB.split(&mut rcc);
 
     let mut ims = ims::IMS::new(gpiob.pb12, gpioa.pa9, gpiob.pb13, gpiob.pb14, gpiob.pb15, dp.SPI2, &mut rcc); 
-    if let Err(err) = ims::test_ims(stdout, &mut ims) {
-        write!(stdout, "ERROR: {:?}\r\n", err).unwrap();
+    if let Err(err) = ims::test_ims(&mut ims) {
+        rprintln!("ERROR: {:?}", err);
     }
 
     ims::start_writing_to_rtt(ims, channels.up.1, &mut dp.SYSCFG, &mut dp.EXTI, &mut cp.NVIC);

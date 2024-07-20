@@ -62,7 +62,7 @@
                 "address": "auto",
                 "clearSearch": false,
                 "polling_interval": 20,
-                "rtt_start_retry": 20000,
+                "rtt_start_retry": 1000,
                 "decoders": [
                     {
                         "label": "RTT channel 0",
