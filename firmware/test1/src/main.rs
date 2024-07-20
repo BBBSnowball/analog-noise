@@ -16,6 +16,7 @@ mod bootloader;
 mod ims;
 mod usb_serial;
 
+use rtt_target::rprintln;
 use stm32f0xx_hal as hal;
 pub use stm32f0xx_hal::pac as pac;
 
@@ -58,6 +59,8 @@ fn main() -> ! {
             }
         }
     };
+    rtt_target::set_print_channel(channels.up.0);
+    rprintln!("Test of println to RTT");
 
     let mut dp = pac::Peripherals::take().unwrap();
     let mut cp = cortex_m::peripheral::Peripherals::take().unwrap();

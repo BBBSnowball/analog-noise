@@ -26,6 +26,11 @@ pub struct IMS {
     spi: Spi<pac::SPI2, SCK<Alternate<AF0>>, MISO<Alternate<AF0>>, MOSI<Alternate<AF0>>, EightBit>,
 }
 
+// Directions on the PCB:
+// Z is positive when PCB is flat on the table with USB port on top.
+// X is positive when PCB stands on the small edge with inputs+USB pointing up.
+// Z is positive when PCB stands on the long edge with USB pointing down.
+
 #[derive(Debug)]
 pub enum Error {
     SpiError(spi::Error),
@@ -165,20 +170,22 @@ pub fn test_ims(mut stdout: HostStream, ims: &mut IMS) -> Result<(), Error> {
     // read REFERENCE (26) because datasheet suggests this when switching modes
     let _ = ims.read(0x26)?;
 
-    for _ in 0..4 {
-        // temp[1] should change by ~1 for every 1 K change in temperatur
-        // (and temp[0] will be 0 because of low-power mode)
-        let mut temp = [0; 2];
-        ims.read_auto_inc(0x0c, &mut temp)?;
-        write!(stdout, "TEMP: {:02x}{:02x}\r\n", temp[1], temp[0])?;
+    if false {
+        for _ in 0..4 {
+            // temp[1] should change by ~1 for every 1 K change in temperatur
+            // (and temp[0] will be 0 because of low-power mode)
+            let mut temp = [0; 2];
+            ims.read_auto_inc(0x0c, &mut temp)?;
+            write!(stdout, "TEMP: {:02x}{:02x}\r\n", temp[1], temp[0])?;
 
-        let mut data = [0; 9];
-        ims.read_auto_inc(0x27, &mut data)?;
-        write!(stdout, "STATUS_REG: {:02x}\r\n", data[0])?;
-        write!(stdout, "OUT_X: {:02x}{:02x}\r\n", data[2], data[1])?;
-        write!(stdout, "OUT_Y: {:02x}{:02x}\r\n", data[4], data[3])?;
-        write!(stdout, "OUT_Z: {:02x}{:02x}\r\n", data[6], data[5])?;
-        write!(stdout, "FIFO REGS: {:02x}, {:02x}\r\n", data[7], data[8])?;
+            let mut data = [0; 9];
+            ims.read_auto_inc(0x27, &mut data)?;
+            write!(stdout, "STATUS_REG: {:02x}\r\n", data[0])?;
+            write!(stdout, "OUT_X: {:02x}{:02x}\r\n", data[2], data[1])?;
+            write!(stdout, "OUT_Y: {:02x}{:02x}\r\n", data[4], data[3])?;
+            write!(stdout, "OUT_Z: {:02x}{:02x}\r\n", data[6], data[5])?;
+            write!(stdout, "FIFO REGS: {:02x}, {:02x}\r\n", data[7], data[8])?;
+        }
     }
 
     Ok(())
@@ -201,7 +208,7 @@ fn write_ims_data_to_channel() {
             let (data_a, data_b) = data.split_at_mut(2);
             let result1 = ims.read_auto_inc(0x0c, data_a);
             let result2 = ims.read_auto_inc(0x27, data_b);
-            if result1.is_ok() && result2.is_ok() {
+            if result1.is_ok() && result2.is_ok() && data[2] != 0 {
                 channel.write(&data);
             }
 

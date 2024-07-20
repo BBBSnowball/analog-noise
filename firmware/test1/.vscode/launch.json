@@ -37,8 +37,8 @@
                 "set $pc = $flash[0][1]",
                 "set $msp = $flash[0][0]",
                 "info reg",
-                "monitor rtt setup 0x20000000 100 \"SEGGER RTT\"",
-                "monitor rtt start",
+                //"monitor rtt setup 0x20000000 100 \"SEGGER RTT\"",
+                //"monitor rtt start",
                 "monitor rtt server start 1234 1",
             ],
             "overrideRestartCommands": [
@@ -49,12 +49,76 @@
                 "set $pc = $flash[0][1]",
                 "set $msp = $flash[0][0]",
                 "info reg",
-                "monitor rtt setup 0x20000000 100 \"SEGGER RTT\"",
-                "monitor rtt start",
+                //"monitor rtt setup 0x20000000 100 \"SEGGER RTT\"",
+                //"monitor rtt start",
                 "monitor rtt server start 1234 1",
             ],
 
             "gdbPath": "gdb",
+
+            // see https://github.com/Marus/cortex-debug/blob/master/debug_attributes.md
+            "rttConfig": {
+                "enabled": true,
+                "address": "auto",
+                "clearSearch": false,
+                "polling_interval": 20,
+                "rtt_start_retry": 20000,
+                "decoders": [
+                    {
+                        "label": "RTT channel 0",
+                        "port": 0,
+                        "timestamp": true,
+                        "type": "console"
+                    },
+                    {
+                        "label": "RTT channel 1",
+                        "port": 1,
+                        "ports": [1],
+                        "config": {},
+                        "type": "advanced",
+                        "decoder": "${workspaceFolder}/decode_rtt.js"
+                    },
+                ]
+            },
+            "graphConfig": [
+                {
+                    "label": "Graph 1",
+                    "timespan": 10,
+                    "type": "realtime",
+                    "annotate": false,
+                    "maximum": 127,
+                    "minimum": -128,
+                    "plots": [
+                        {
+                            "graphId": "T", 
+                            "label": "temperature",
+                            "color": "#53753c"
+                        },
+                        {
+                            "graphId": "x", 
+                            "label": "X",
+                            "color": "#955f20"
+                        },
+                        {
+                            "graphId": "y", 
+                            "label": "Y",
+                            "color": "#955fff"
+                        },
+                        {
+                            "graphId": "z", 
+                            "label": "Z",
+                            "color": "#33ff00"
+                        },
+                        /*
+                        {
+                            "graphId": "d", 
+                            "label": "dbg",
+                            "color": "#3300ff"
+                        },
+                        */
+                    ]
+                },
+            ]
         },
     ]
 }
