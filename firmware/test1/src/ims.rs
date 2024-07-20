@@ -184,8 +184,7 @@ pub fn test_ims(mut stdout: HostStream, ims: &mut IMS) -> Result<(), Error> {
     Ok(())
 }
 
-//FIXME The u32 is an ugly hack to have this aligned on a 16-byte boundary.
-static FOR_INT: Mutex<RefCell<(Option<(IMS, UpChannel)>, u32)>> = Mutex::new(RefCell::new((None, 42)));
+static FOR_INT: Mutex<RefCell<Option<(IMS, UpChannel)>>> = Mutex::new(RefCell::new(None));
 
 #[used]
 static ABC: u32 = 42;
@@ -194,7 +193,7 @@ fn write_ims_data_to_channel() {
     // Enter critical section
     cortex_m::interrupt::free(|cs| {
         // Obtain all Mutex protected resources
-        if let &mut (Some(ref mut for_int), _) = FOR_INT.borrow(cs).borrow_mut().deref_mut() {
+        if let &mut Some(ref mut for_int) = FOR_INT.borrow(cs).borrow_mut().deref_mut() {
             let (ims, channel) = for_int;
 
             //FIXME Do this with another interrupt or use RTIC!
@@ -231,7 +230,7 @@ pub fn start_writing_to_rtt(ims: IMS, channel: UpChannel, syscfg: &mut pac::SYSC
     cortex_m::peripheral::NVIC::unpend(irq);
 
     cortex_m::interrupt::free(move |cs| {
-        *FOR_INT.borrow(cs).borrow_mut() = (Some((ims, channel)), 42)
+        *FOR_INT.borrow(cs).borrow_mut() = Some((ims, channel))
     });
 
     //FIXME remove
