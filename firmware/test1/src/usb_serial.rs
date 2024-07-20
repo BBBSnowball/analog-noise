@@ -1,47 +1,28 @@
 // copied from https://github.com/stm32-rs/stm32f0xx-hal/blob/master/examples/usb_serial.rs
-// and adjusted for our board
+// and modified a lot
 
 //! CDC-ACM serial port example using polling in a busy loop.
 
 use bootloader;
-use stm32f0xx_hal::usb::{Peripheral, UsbBus};
-use stm32f0xx_hal::{pac, prelude::*};
+use crate::hal::usb::{Peripheral, UsbBus};
+use crate::hal::prelude::*;
 use usb_device::prelude::*;
 use usbd_serial::{SerialPort, USB_CLASS_CDC};
+use crate::hal::gpio::*;
 
-pub fn main() -> ! {
-    let mut dp = pac::Peripherals::take().unwrap();
+pub struct UsbHardware {
+    pub led_pin: gpiob::PB2<Input<Floating>>,
+    pub pin_dm: gpioa::PA11<Input<Floating>>,
+    pub pin_dp: gpioa::PA12<Input<Floating>>,
+    pub usb: crate::pac::USB,
+}
 
-    /*
-     * IMPORTANT: if you have a chip in TSSOP20 (STM32F042F) or UFQFPN28 (STM32F042G) package,
-     * and want to use USB, make sure you call `remap_pins(rcc, syscfg)`, otherwise the device will not enumerate.
-     *
-     * Uncomment the following function if the situation above applies to you.
-     */
-
-    // stm32f0xx_hal::usb::remap_pins(&mut dp.RCC, &mut dp.SYSCFG);
-
-    let mut rcc = dp
-        .RCC
-        .configure()
-        .hsi48()
-        .enable_crs(dp.CRS)
-        .sysclk(48.mhz())
-        .pclk(24.mhz())
-        .freeze(&mut dp.FLASH);
-
-    // Configure the on-board LED (PB2)
-    let gpiob = dp.GPIOB.split(&mut rcc);
-    let mut led = cortex_m::interrupt::free(|cs| gpiob.pb2.into_push_pull_output(cs));
+pub fn main(hw: UsbHardware) -> ! {
+    let UsbHardware { led_pin, pin_dm, pin_dp, usb } = hw;
+    let mut led = cortex_m::interrupt::free(|cs| led_pin.into_push_pull_output(cs));
     led.set_low().ok(); // Turn off
 
-    let gpioa = dp.GPIOA.split(&mut rcc);
-
-    let usb = Peripheral {
-        usb: dp.USB,
-        pin_dm: gpioa.pa11,
-        pin_dp: gpioa.pa12,
-    };
+    let usb = Peripheral { usb, pin_dm, pin_dp };
 
     let usb_bus = UsbBus::new(usb);
 
