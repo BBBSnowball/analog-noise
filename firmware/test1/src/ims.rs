@@ -2,14 +2,17 @@ use crate::hal::{
     gpio::*,
     gpio::gpiob::*,
     pac,
+    pac::interrupt,
     prelude::*,
     rcc::Rcc,
     spi,
     spi::Spi,
     spi::{Mode, Phase, Polarity, EightBit},
 };
-use core::{convert::Infallible, fmt::Write};
+use core::{cell::RefCell, convert::Infallible, fmt::Write, ops::DerefMut};
+use cortex_m::interrupt::Mutex;
 use cortex_m_semihosting::hio::HostStream;
+use rtt_target::UpChannel;
 
 type CS<MODE> = PB12<MODE>;
 type SCK<MODE> = PB13<MODE>;
@@ -19,7 +22,7 @@ type INT<MODE> = gpioa::PA9<MODE>;
 
 pub struct IMS {
     cs: CS<Output<PushPull>>,
-    int: INT<Input<PullUp>>,
+    int: INT<Input<Floating>>,
     spi: Spi<pac::SPI2, SCK<Alternate<AF0>>, MISO<Alternate<AF0>>, MOSI<Alternate<AF0>>, EightBit>,
 }
 
@@ -58,7 +61,7 @@ impl IMS {
         let (mut cs, int, sck, miso, mosi) = cortex_m::interrupt::free(move |cs| {
             (
                 pb12.into_push_pull_output(cs),
-                pa9.into_pull_up_input(cs),
+                pa9.into_floating_input(cs),
                 pb13.into_alternate_af0(cs),
                 pb14.into_alternate_af0(cs),
                 pb15.into_alternate_af0(cs),
@@ -179,4 +182,60 @@ pub fn test_ims(mut stdout: HostStream, ims: &mut IMS) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+//FIXME The u32 is an ugly hack to have this aligned on a 16-byte boundary.
+static FOR_INT: Mutex<RefCell<(Option<(IMS, UpChannel)>, u32)>> = Mutex::new(RefCell::new((None, 42)));
+
+#[used]
+static ABC: u32 = 42;
+
+fn write_ims_data_to_channel() {
+    // Enter critical section
+    cortex_m::interrupt::free(|cs| {
+        // Obtain all Mutex protected resources
+        if let &mut (Some(ref mut for_int), _) = FOR_INT.borrow(cs).borrow_mut().deref_mut() {
+            let (ims, channel) = for_int;
+
+            //FIXME Do this with another interrupt or use RTIC!
+            let mut data = [0; 9];
+            let (data_a, data_b) = data.split_at_mut(2);
+            let result1 = ims.read_auto_inc(0x0c, data_a);
+            let result2 = ims.read_auto_inc(0x27, data_b);
+            if result1.is_ok() && result2.is_ok() {
+                channel.write(&data);
+            }
+
+            // Clear event triggering the interrupt
+            unsafe { pac::Peripherals::steal().EXTI.pr.write(|w| w.pif1().set_bit()); }
+        }
+    });
+}
+
+#[interrupt]
+fn EXTI4_15() {
+    write_ims_data_to_channel()
+}
+
+pub fn start_writing_to_rtt(ims: IMS, channel: UpChannel, syscfg: &mut pac::SYSCFG, exti: &mut pac::EXTI, nvic: &mut pac::NVIC) {
+    syscfg.exticr3.modify(|_, w| w.exti9().pa9());
+    exti.imr.modify(|_, w| w.mr9().set_bit());
+    exti.rtsr.modify(|_, w| w.tr9().set_bit());
+
+    // Enable EXTI IRQ, set prio 1 and clear any pending IRQs
+    let irq = pac::Interrupt::EXTI4_15;
+    unsafe {
+        nvic.set_priority(irq, 1);
+        cortex_m::peripheral::NVIC::unmask(irq);
+    }
+    cortex_m::peripheral::NVIC::unpend(irq);
+
+    cortex_m::interrupt::free(move |cs| {
+        *FOR_INT.borrow(cs).borrow_mut() = (Some((ims, channel)), 42)
+    });
+
+    //FIXME remove
+    loop {
+        write_ims_data_to_channel()
+    }
 }

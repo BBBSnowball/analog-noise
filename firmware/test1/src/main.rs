@@ -34,7 +34,34 @@ fn main() -> ! {
     let num = 42;
     write!(stdout, "Answer: {}\r\n", num).unwrap();
 
+    let channels = rtt_target::rtt_init! {
+        up: {
+            0: {
+                size: 1024,
+                name: "Terminal"
+            }
+            1: {
+                size: 128,
+                // skip data if necessary but only full blocks
+                mode: rtt_target::ChannelMode::NoBlockSkip,
+                name: "IMS"
+            }
+        }
+        down: {
+            0: {
+                size: 16,
+                name: "Terminal"
+            }
+            1: {
+                size: 16,
+                name: "dummy"
+            }
+        }
+    };
+
     let mut dp = pac::Peripherals::take().unwrap();
+    let mut cp = cortex_m::peripheral::Peripherals::take().unwrap();
+    dp.RCC.apb2enr.modify(|_, w| w.syscfgen().set_bit());  // Enable clock for SYSCFG (used for EXTI?)
     let mut rcc = dp
         .RCC
         .configure()
@@ -51,6 +78,8 @@ fn main() -> ! {
         write!(stdout, "ERROR: {:?}\r\n", err).unwrap();
     }
 
+    ims::start_writing_to_rtt(ims, channels.up.1, &mut dp.SYSCFG, &mut dp.EXTI, &mut cp.NVIC);
+
     usb_serial::main(usb_serial::UsbHardware {
         led_pin: gpiob.pb2,
         pin_dm: gpioa.pa11,
@@ -58,7 +87,3 @@ fn main() -> ! {
         usb: dp.USB,
     });
 }
-
-//defmt::timestamp!("{=u32:us}", {
-//    unsafe { (*STK::ptr()).cvr.read().bits() }
-//});

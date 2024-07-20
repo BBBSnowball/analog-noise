@@ -37,6 +37,9 @@
                 "set $pc = $flash[0][1]",
                 "set $msp = $flash[0][0]",
                 "info reg",
+                "monitor rtt setup 0x20000000 100 0",
+                "monitor rtt start",
+                "monitor rtt server start 1234 1",
             ],
             "overrideRestartCommands": [
                 // Things are a bit more complicated for us because we will boot to bootloader while USB is attached.
@@ -46,8 +49,9 @@
                 "set $pc = $flash[0][1]",
                 "set $msp = $flash[0][0]",
                 "info reg",
-                //"monitor rtt setup 0x20000000 100 0",
-                //"monitor rtt start",
+                "monitor rtt setup 0x20000000 100 0",
+                "monitor rtt start",
+                "monitor rtt server start 1234 1",
             ],
 
             "gdbPath": "gdb",
