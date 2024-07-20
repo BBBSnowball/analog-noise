@@ -11,6 +11,7 @@ extern crate usbd_serial;
 
 mod bootloader;
 mod ims;
+mod touch;
 mod usb_serial;
 
 use rtt_target::rprintln;
@@ -69,6 +70,8 @@ fn main() -> ! {
     if let Err(err) = ims::test_ims(&mut ims) {
         rprintln!("ERROR: {:?}", err);
     }
+
+    touch::test_touch(dp.TSC, &mut rcc, gpioa.pa6, gpioa.pa7, gpioa.pa2, gpioa.pa0);
 
     ims::start_writing_to_rtt(ims, channels.up.1, &mut dp.SYSCFG, &mut dp.EXTI, &mut cp.NVIC);
 
