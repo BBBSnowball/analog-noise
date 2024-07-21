@@ -1,25 +1,18 @@
 #![no_std]
 #![no_main]
 
-extern crate panic_halt;
-extern crate cortex_m;
+extern crate analog_noise_test1;
 extern crate cortex_m_rt;
 extern crate rtt_target;
-extern crate stm32f0xx_hal;
 extern crate usb_device;
 extern crate usbd_serial;
 
-mod bootloader;
-mod ims;
-mod touch;
-mod usb_serial;
-
+use analog_noise_test1::{ims, touch, usb_serial};
+use analog_noise_test1::hal::{self, pac};
+use analog_noise_test1::hal::delay::Delay;
+use analog_noise_test1::hal::gpio::*;
+use analog_noise_test1::hal::prelude::*;
 use rtt_target::rprintln;
-use stm32f0xx_hal as hal;
-pub use stm32f0xx_hal::pac as pac;
-use crate::hal::delay::Delay;
-use crate::hal::gpio::*;
-use crate::hal::prelude::*;
 
 use cortex_m_rt::entry;
 

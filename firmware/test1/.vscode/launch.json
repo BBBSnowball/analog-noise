@@ -10,7 +10,7 @@
             "cwd": "${workspaceFolder}",
             //"preLaunchTask": "rust: cargo build",
             "preLaunchTask": "build",
-            "executable": "${workspaceFolder}/target/thumbv6m-none-eabi/debug/analog-noise-test1",
+            "executable": "${workspaceFolder}/target/thumbv6m-none-eabi/debug/main",
             "request": "launch",
             "type": "cortex-debug",
             //"runToEntryPoint": "main",
@@ -22,7 +22,7 @@
                 "monitor init",
                 "monitor reset init",
                 "monitor halt",
-                "monitor flash write_image erase ./target/thumbv6m-none-eabi/debug/analog-noise-test1.bin 0x08000000",
+                "monitor flash write_image erase ./target/thumbv6m-none-eabi/debug/main.bin 0x08000000",
                 // Things are a bit more complicated for us because we will boot to bootloader while USB is attached.
                 "b *0x1fffcc28",  // breakpoint on bootloader
 
