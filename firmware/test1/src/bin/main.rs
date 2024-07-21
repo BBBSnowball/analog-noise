@@ -84,7 +84,7 @@ fn main() -> ! {
 
     let mut delay = Delay::new(cp.SYST, &rcc);
 
-    dac::test_dac(dp.DAC, gpioa.pa4, gpioa.pa5, &mut rcc);
+    dac::test_dac(dp.DAC, gpioa.pa4, gpioa.pa5, dp.TIM6, &mut rcc);
 
     test_pwm(gpiob.pb3, gpiob.pb4, dp.TIM2, dp.TIM3, &mut rcc, &mut delay);
 
