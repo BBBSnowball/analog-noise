@@ -19,3 +19,6 @@ panic-halt = "0.2.0"
 #[dependencies]
 #embedded-hal = "0.2.7"
 #nb = "1"
+
+[profile.release]
+debug = true
