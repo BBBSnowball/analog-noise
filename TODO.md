@@ -36,6 +36,12 @@ These have not been implemented in what is now v1 of the board, so they probably
 4. PWM for all LEDs.
     - Use PB5 instead of PB2.
     - PB3 uses TIM2, which is not available for PWM in the hal, for some reason.
+5. R3 should be 1k instead of 10 k but it is only used for testing.
+6. Power consumption is higher than expected.
+    - 4-5 mA with opamp disabled and MCU in `wfi()` sleep mode.
+7. Glitch on DAC at startup.
+    - Both DAC outputs glitch high for a short time (< 5 us) when starting up.
+    - TODO: This was without the opamp. How does it behave with the opamp?
 
 # Test Hardware
 

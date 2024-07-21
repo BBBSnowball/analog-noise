@@ -239,3 +239,59 @@ pub fn start_writing_to_rtt(ims: IMS, channel: UpChannel, syscfg: &mut pac::SYSC
         write_ims_data_to_channel()
     }
 }
+
+pub fn sleep(ims: &mut IMS) -> Result<(), Error> {
+    let who_am_i = ims.read(0x0f);
+    if let Ok(who_am_i) = who_am_i {
+        rprintln!("IMS, WHO_AM_I: {:x}", who_am_i);
+        if who_am_i != 0x33 {
+            rprintln!("IMS: ERROR: ID is not as expected");
+            return Err(Error::WrongId)
+        }
+    } else {
+        rprintln!("IMS, WHO_AM_I: error");
+        return Err(Error::WrongId)
+    }
+
+    ims.write_auto_inc(0x1e, &mut[
+        // CTRL_REG0 (1e): disable pullup on DO pin because that should use less power
+        0x90,
+        // TEMP_CFG_REG (1f): disable temperature sensor
+        0x00,
+        // CTRL_REG1 (20): low-power, power-down
+        0x08,
+        // CTRL_REG2 (21): no high-pass filter
+        0x00,
+        // CTRL_REG3 (22): no interrupt
+        0x00,
+        // CTRL_REG4 (23): keep defaults
+        0x00,
+        // CTRL_REG5 (24): keep defaults
+        0x00,
+        // CTRL_REG6 (25): keep defaults
+        0x00,
+    ])?;
+
+    // read REFERENCE (26) because datasheet suggests this when switching modes
+    let _ = ims.read(0x26)?;
+
+    if false {
+        for _ in 0..4 {
+            // temp[1] should change by ~1 for every 1 K change in temperatur
+            // (and temp[0] will be 0 because of low-power mode)
+            let mut temp = [0; 2];
+            ims.read_auto_inc(0x0c, &mut temp)?;
+            rprintln!("TEMP: {:02x}{:02x}", temp[1], temp[0]);
+
+            let mut data = [0; 9];
+            ims.read_auto_inc(0x27, &mut data)?;
+            rprintln!("STATUS_REG: {:02x}", data[0]);
+            rprintln!("OUT_X: {:02x}{:02x}", data[2], data[1]);
+            rprintln!("OUT_Y: {:02x}{:02x}", data[4], data[3]);
+            rprintln!("OUT_Z: {:02x}{:02x}", data[6], data[5]);
+            rprintln!("FIFO REGS: {:02x}, {:02x}", data[7], data[8]);
+        }
+    }
+
+    Ok(())
+}
