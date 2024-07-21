@@ -6,14 +6,9 @@ use crate::hal::{
     gpio::*,
     gpio::gpioa::*,
     pac,
-    pac::interrupt,
-    prelude::*,
     rcc::Rcc,
-    tsc,
 };
-use core::{cell::RefCell, convert::Infallible, ops::DerefMut};
-use cortex_m::interrupt::Mutex;
-use rtt_target::{UpChannel, rprintln};
+use rtt_target::rprintln;
 
 pub fn test_touch(tsc: pac::TSC, rcc: &mut Rcc, touch1: PA6<Input<Floating>>, touch2: PA7<Input<Floating>>, touch3: PA2<Input<Floating>>, pa0: PA0<Input<Floating>>) {
     let mut tsc = crate::hal::tsc::Tsc::tsc(tsc, rcc, None);

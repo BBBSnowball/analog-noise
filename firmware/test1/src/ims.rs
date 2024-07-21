@@ -21,7 +21,7 @@ type INT<MODE> = gpioa::PA9<MODE>;
 
 pub struct IMS {
     cs: CS<Output<PushPull>>,
-    int: INT<Input<Floating>>,
+    //int: INT<Input<Floating>>,
     spi: Spi<pac::SPI2, SCK<Alternate<AF0>>, MISO<Alternate<AF0>>, MOSI<Alternate<AF0>>, EightBit>,
 }
 
@@ -70,9 +70,11 @@ impl IMS {
         //FIXME IMS should support more. This is copied from an example.
         let spi = Spi::spi2(spi, (sck, miso, mosi), MODE, 100_000.hz(), rcc);
 
+        let _ = int;
+
         IMS {
             cs,
-            int,
+            //int,
             spi,
         }
     }

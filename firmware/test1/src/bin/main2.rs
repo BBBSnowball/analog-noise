@@ -7,7 +7,7 @@ extern crate rtt_target;
 extern crate usb_device;
 extern crate usbd_serial;
 
-use analog_noise_test1::{dac, ims, touch, usb_serial};
+use analog_noise_test1::{dac, ims, touch};
 use analog_noise_test1::hal::{self, pac};
 use analog_noise_test1::hal::delay::Delay;
 use analog_noise_test1::hal::gpio::*;
@@ -76,8 +76,8 @@ fn main() -> ! {
         .configure()
         .hsi48()
         .enable_crs(dp.CRS)
-        .sysclk(48.mhz())
-        .pclk(24.mhz())
+        .sysclk(1.mhz())
+        .pclk(1.mhz())
         .freeze(&mut dp.FLASH);
     let gpioa = dp.GPIOA.split(&mut rcc);
     let gpiob = dp.GPIOB.split(&mut rcc);
@@ -97,10 +97,5 @@ fn main() -> ! {
 
     ims::start_writing_to_rtt(ims, channels.up.1, &mut dp.SYSCFG, &mut dp.EXTI, &mut cp.NVIC);
 
-    usb_serial::main(usb_serial::UsbHardware {
-        led_pin: gpiob.pb2,
-        pin_dm: gpioa.pa11,
-        pin_dp: gpioa.pa12,
-        usb: dp.USB,
-    });
+    loop {}
 }
