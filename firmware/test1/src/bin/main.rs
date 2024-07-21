@@ -7,7 +7,7 @@ extern crate rtt_target;
 extern crate usb_device;
 extern crate usbd_serial;
 
-use analog_noise_test1::{ims, touch, usb_serial};
+use analog_noise_test1::{dac, ims, touch, usb_serial};
 use analog_noise_test1::hal::{self, pac};
 use analog_noise_test1::hal::delay::Delay;
 use analog_noise_test1::hal::gpio::*;
@@ -83,6 +83,8 @@ fn main() -> ! {
     let gpiob = dp.GPIOB.split(&mut rcc);
 
     let mut delay = Delay::new(cp.SYST, &rcc);
+
+    dac::test_dac(dp.DAC, gpioa.pa4, gpioa.pa5, &mut rcc);
 
     test_pwm(gpiob.pb3, gpiob.pb4, dp.TIM2, dp.TIM3, &mut rcc, &mut delay);
 

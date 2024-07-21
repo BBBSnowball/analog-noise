@@ -12,6 +12,7 @@ pub use stm32f0xx_hal as hal;
 pub use stm32f0xx_hal::pac as pac;
 
 pub mod bootloader;
+pub mod dac;
 pub mod ims;
 pub mod touch;
 pub mod usb_serial;
