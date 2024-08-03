@@ -42,6 +42,8 @@ These have not been implemented in what is now v1 of the board, so they probably
 7. Glitch on DAC at startup.
     - Both DAC outputs glitch high for a short time (< 5 us) when starting up.
     - TODO: This was without the opamp. How does it behave with the opamp?
+8. Output filter.
+    - We should add a capacitor after R20 and R21, e.g. 1 nF for 16 kHz.
 
 # Test Hardware
 
