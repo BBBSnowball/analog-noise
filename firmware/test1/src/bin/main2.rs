@@ -11,8 +11,7 @@ extern crate usb_device;
 extern crate usbd_serial;
 
 use analog_noise_test1::{dac, ims};
-use analog_noise_test1::hal::{self, pac};
-use analog_noise_test1::hal::delay::Delay;
+use analog_noise_test1::hal::pac;
 use analog_noise_test1::hal::gpio::*;
 use analog_noise_test1::hal::prelude::*;
 use rtt_target::rprintln;
