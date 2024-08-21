@@ -1,0 +1,100 @@
+[package]
+edition = "2018"
+authors = [
+    "Daniel Egger <daniel@eggers-club.de>",
+    "Thomas Bytheway <github@harkonen.net>",
+    "Jesse Braham <jesse@beta7.io>",
+]
+categories = [
+    "embedded",
+    "hardware-support",
+    "no-std",
+]
+description = "Peripheral access API for STM32F0 series microcontrollers"
+documentation = "https://docs.rs/crate/stm32f0xx-hal"
+
+keywords = [
+    "arm",
+    "cortex-m",
+    "stm32f0xx",
+    "hal",
+]
+license = "0BSD"
+name = "stm32f0xx-hal"
+readme = "README.md"
+repository = "https://github.com/stm32-rs/stm32f0xx-hal"
+version = "0.18.0"
+
+[package.metadata.docs.rs]
+features = ["stm32f042", "rt", "stm32-usbd"]
+targets = ["thumbv6m-none-eabi"]
+
+[dependencies]
+bare-metal = { version = "1.0.0" }
+cast = "0.3"
+cortex-m = "0.7"
+embedded-hal = { version = "0.2", features = ["unproven"] }
+stm32f0 = "0.14"
+nb = "1"
+void = { version = "1.0", default-features = false }
+stm32-usbd = { version = "0.6", optional = true }
+bxcan = "0.6.0"
+embedded-storage = "0.3.0"
+
+[dev-dependencies]
+cortex-m-rt = "0.7"
+panic-halt = "0.2"
+usb-device = "0.2.7"
+usbd-serial = "0.1.1"
+
+[features]
+device-selected = []
+rt = ["stm32f0/rt"]
+stm32f030 = ["stm32f0/stm32f0x0", "device-selected"]
+stm32f030x4 = ["stm32f030"]
+stm32f030x6 = ["stm32f030"]
+stm32f030x8 = ["stm32f030"]
+stm32f030xc = ["stm32f030"]
+stm32f031 = ["stm32f0/stm32f0x1", "device-selected"]
+stm32f038 = ["stm32f0/stm32f0x8", "device-selected"]
+stm32f042 = ["stm32f0/stm32f0x2", "device-selected"]
+stm32f048 = ["stm32f0/stm32f0x8", "device-selected"]
+stm32f051 = ["stm32f0/stm32f0x1", "device-selected"]
+stm32f058 = ["stm32f0/stm32f0x8", "device-selected"]
+stm32f070 = ["stm32f0/stm32f0x0", "device-selected"]
+stm32f070x6 = ["stm32f070"]
+stm32f070xb = ["stm32f070"]
+stm32f071 = ["stm32f0/stm32f0x1", "device-selected"]
+stm32f072 = ["stm32f0/stm32f0x2", "device-selected"]
+stm32f078 = ["stm32f0/stm32f0x8", "device-selected"]
+stm32f091 = ["stm32f0/stm32f0x1", "device-selected"]
+stm32f098 = ["stm32f0/stm32f0x8", "device-selected"]
+
+[profile.dev]
+debug = true
+lto = true
+
+[profile.release]
+lto = true
+debug = true
+opt-level = "s"
+
+[[example]]
+name = "blinky_timer_irq"
+required-features = ["stm32f072", "rt"]
+
+[[example]]
+name = "serial_stopwatch"
+required-features = ["stm32f072", "rt"]
+
+[[example]]
+name = "dac"
+required-features = ["stm32f072"]
+
+[[example]]
+name = "led_hal_button_irq"
+required-features = ["stm32f042", "rt"]
+
+[[example]]
+name = "usb_serial"
+required-features = ["rt", "stm32f042", "stm32-usbd"]
