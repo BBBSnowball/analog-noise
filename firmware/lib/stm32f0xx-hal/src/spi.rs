@@ -530,7 +530,7 @@ where
     }
 }
 
-use embedded_hal_new::spi::{Error as ErrorNew, ErrorKind, ErrorType, SpiDevice, Operation};
+use embedded_hal_new::spi::{Error as ErrorNew, ErrorKind, ErrorType, SpiBus};
 
 impl ErrorNew for Error {
     fn kind(&self) -> ErrorKind {
@@ -548,50 +548,49 @@ impl<SPI, SCKPIN, MISOPIN, MOSIPIN> ErrorType
     type Error = Error;
 }
 
-impl<SPI, SCKPIN, MISOPIN, MOSIPIN> SpiDevice
+impl<SPI, SCKPIN, MISOPIN, MOSIPIN> SpiBus
     for Spi<SPI, SCKPIN, MISOPIN, MOSIPIN, EightBit>
 where
     SPI: Deref<Target = SpiRegisterBlock>,
 {
-    fn transaction(&mut self, operations: &mut [Operation<'_, u8>]) -> Result<(), Self::Error> {
-        for op in operations {
-            match op {
-                Operation::Write(words) =>
-                    <dyn ::embedded_hal::blocking::spi::Write<u8, Error=Self::Error>>::write(self, words)?,
-                Operation::TransferInPlace(words) => {
-                    // We cannot use the return value to update `words` because the returned ref isn't mut
-                    // but we know that it will be the same as `words` for our implementation of transfer(),
-                    // so we don't have to update anything.
-                    _ = <dyn ::embedded_hal::blocking::spi::Transfer<u8, Error=Self::Error>>::transfer(self, words)?;
-                    ()
-                }
-                Operation::Read(words) => {
-                    // see TransferInPlace
-                    // `SpiBus::read` says that the sent value is implementation-defined. We send the old value of
-                    // the buffer, which is a rather stupid definition ;-)
-                    _ = <dyn ::embedded_hal::blocking::spi::Transfer<u8, Error=Self::Error>>::transfer(self, words)?;
-                    ()
-                }
-                Operation::Transfer(read, write) => {
-                    //read.copy_from_slice(write);
-                    //let _ = <dyn ::embedded_hal::blocking::spi::Transfer<u8, Error=Self::Error>>::transfer(self, write)?;
+    fn read(&mut self, words: &mut [u8]) -> Result<(), Self::Error> {
+        // see TransferInPlace
+        // `SpiBus::read` says that the sent value is implementation-defined. We send the old value of
+        // the buffer, which is a rather stupid definition ;-)
+        _ = <dyn ::embedded_hal::blocking::spi::Transfer<u8, Error=Self::Error>>::transfer(self, words)?;
+        Ok(())
+    }
 
-                    // We want to transfer bidirectionally, make sure we're in the correct mode
-                    self.set_bidi();
+    fn write(&mut self, words: &[u8]) -> Result<(), Self::Error> {
+        <dyn ::embedded_hal::blocking::spi::Write<u8, Error=Self::Error>>::write(self, words)
+    }
 
-                    for (wr, rd) in write.iter().zip(read.iter_mut()) {
-                        nb::block!(self.check_send())?;
-                        self.send_u8(*wr);
-                        nb::block!(self.check_read())?;
-                        *rd = self.read_u8();
-                    }
-                }
-                Operation::DelayNs(_delay) => {
-                    //FIXME Can we implement this without permanently holding a mut ref to Delay and thereby SysTick?
-                    Err(Error::Crc)?
-                }
-            }
+    fn transfer_in_place(&mut self, words: &mut [u8]) -> Result<(), Self::Error> {
+        // We cannot use the return value to update `words` because the returned ref isn't mut
+        // but we know that it will be the same as `words` for our implementation of transfer(),
+        // so we don't have to update anything.
+        _ = <dyn ::embedded_hal::blocking::spi::Transfer<u8, Error=Self::Error>>::transfer(self, words)?;
+        Ok(())
+    }
+
+    fn transfer(&mut self, read: &mut [u8], write: &[u8]) -> Result<(), Self::Error> {
+        //read.copy_from_slice(write);
+        //let _ = <dyn ::embedded_hal::blocking::spi::Transfer<u8, Error=Self::Error>>::transfer(self, write)?;
+
+        // We want to transfer bidirectionally, make sure we're in the correct mode
+        self.set_bidi();
+
+        for (wr, rd) in write.iter().zip(read.iter_mut()) {
+            nb::block!(self.check_send())?;
+            self.send_u8(*wr);
+            nb::block!(self.check_read())?;
+            *rd = self.read_u8();
         }
+
+        Ok(())
+    }
+
+    fn flush(&mut self) -> Result<(), Self::Error> {
         Ok(())
     }
 }
