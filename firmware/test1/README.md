@@ -1,6 +1,6 @@
 ```
 rustup target add thumbv6m-none-eabi
-#cargo install cargo-binutils
+#cargo install cargo-binutils cargo-bloat
 cargo build
 ```
 

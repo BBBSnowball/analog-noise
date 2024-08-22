@@ -11,3 +11,13 @@ target = "thumbv6m-none-eabi"
 
 [profile.dev.package."*"]
 opt-level = "s"
+
+[unstable]
+# Our largest function is core::str::count::do_count_chars with 1 kB
+# because it is optimized for speed. We can set an option to change that.
+# The feature "optimize_for_size" is only available in 1.80 or newer.
+# https://github.com/rust-lang/rust/blob/1.80.0/library/core/src/str/count.rs
+# This has a few more tricks: https://github.com/johnthagen/min-sized-rust
+build-std = [ "core", "panic_abort" ]
+#build-std-features = "panic_immediate_abort,core/optimize_for_size"
+build-std-features = [ "panic_immediate_abort", "core/optimize_for_size" ]

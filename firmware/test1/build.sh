@@ -3,9 +3,11 @@ set -xe
 #export RUSTC_LOG=rustc_codegen_ssa::back::link=info
 cargo build
 for prog in main main2 ; do
-    ELF=target/thumbv6m-none-eabi/debug/$prog
-    cargo objdump --bin $prog -- -xd >"$ELF.map"
-    cargo nm --bin $prog -- --print-size --size-sort --demangle --radix=d | tail -n 5 | sed 's/^\w* /\t\t/'
-    cargo size --bin $prog -- -d
-    cargo objcopy --bin $prog -- -O binary "$ELF.bin"
+    #ELF=target/thumbv6m-none-eabi/debug/$prog
+    #cargo objdump --bin $prog -- -xd >"$ELF.map"
+    #cargo nm --bin $prog -- --print-size --size-sort --demangle --radix=d | tail -n 5 | sed 's/^\w* /\t\t/'
+    #cargo size --bin $prog -- -d
+    #cargo objcopy --bin $prog -- -O binary "$ELF.bin"
+
+    cargo bloat --bin $prog
 done

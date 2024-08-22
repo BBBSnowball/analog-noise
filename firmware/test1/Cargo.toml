@@ -28,6 +28,12 @@ portable-atomic = { version = "1", features = ["require-cas", "unsafe-assume-sin
 #embedded-hal = "0.2.7"
 #nb = "1"
 
+[build-dependencies]
+#cargo-binutils = "0.3"
+#cargo-bloat = "0.12"
+#probe-rs-cli = "1.0"
+#probe-rs-debugger = ""
+
 [profile.release]
 debug = true
 
