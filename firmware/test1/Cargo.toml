@@ -7,7 +7,8 @@ version = "0.1.0"
 [dependencies]
 cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7"
-stm32f0xx-hal = { version = "0.18", features = ["stm32f072", "rt", "stm32-usbd"] }
+#stm32f0xx-hal = { version = "0.18", features = ["stm32f072", "rt", "stm32-usbd"] }
+stm32f0xx-hal = { version = "0.18", features = ["stm32f072", "rt", "stm32-usbd"], path = "../lib/stm32f0xx-hal" }
 usb-device = "0.2.7"
 usbd-serial = "0.1.1"
 rtt-target = "0.5.0"
@@ -15,6 +16,10 @@ rtt-target = "0.5.0"
 #defmt-rtt = "0.4"
 ## Panic behaviour, see https://crates.io/keywords/panic-impl for alternatives
 panic-halt = "0.2.0"
+ssd1680 = "0.2.0"
+#embedded-hal = "1.0.0"
+#embedded-hal-old = { package = "embedded-hal", version = "0.2" }
+embedded-graphics = "0.8.1"
 
 #[dependencies]
 #embedded-hal = "0.2.7"

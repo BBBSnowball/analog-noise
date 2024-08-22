@@ -7,7 +7,7 @@ extern crate rtt_target;
 extern crate usb_device;
 extern crate usbd_serial;
 
-use analog_noise_test1::{dac, ims, touch, usb_serial};
+use analog_noise_test1::{dac, epd, ims, touch, usb_serial};
 use analog_noise_test1::hal::{self, pac};
 use analog_noise_test1::hal::delay::Delay;
 use analog_noise_test1::hal::gpio::*;
@@ -81,6 +81,8 @@ fn main() -> ! {
         .freeze(&mut dp.FLASH);
     let gpioa = dp.GPIOA.split(&mut rcc);
     let gpiob = dp.GPIOB.split(&mut rcc);
+    let gpioc = dp.GPIOC.split(&mut rcc);
+    let gpiof = dp.GPIOF.split(&mut rcc);
 
     let mut delay = Delay::new(cp.SYST, &rcc);
 
@@ -88,14 +90,22 @@ fn main() -> ! {
 
     test_pwm(gpiob.pb3, gpiob.pb4, dp.TIM2, dp.TIM3, &mut rcc, &mut delay);
 
-    let mut ims = ims::IMS::new(gpiob.pb12, gpioa.pa9, gpiob.pb13, gpiob.pb14, gpiob.pb15, dp.SPI2, &mut rcc); 
-    if let Err(err) = ims::test_ims(&mut ims) {
-        rprintln!("ERROR: {:?}", err);
+    if false {
+        let mut ims = ims::IMS::new(gpiob.pb12, gpioa.pa9, gpiob.pb13, gpiob.pb14, gpiob.pb15, dp.SPI2, &mut rcc); 
+        if let Err(err) = ims::test_ims(&mut ims) {
+            rprintln!("ERROR: {:?}", err);
+        }
+
+        touch::test_touch(dp.TSC, &mut rcc, gpioa.pa6, gpioa.pa7, gpioa.pa2, gpioa.pa0);
+
+        ims::start_writing_to_rtt(ims, channels.up.1, &mut dp.SYSCFG, &mut dp.EXTI, &mut cp.NVIC);
+    } else {
+        let mut epd = epd::EpaperDisplay::new(
+            gpioc.pc15, gpiof.pf0, gpiof.pf1, gpioc.pc14, gpiob.pb13, gpiob.pb14, gpiob.pb15, dp.SPI2, &mut rcc, &mut delay);
+        if let Err(err) = epd::test_epd(&mut epd, &mut delay) {
+            rprintln!("ERROR: {:?}", err);
+        }
     }
-
-    touch::test_touch(dp.TSC, &mut rcc, gpioa.pa6, gpioa.pa7, gpioa.pa2, gpioa.pa0);
-
-    ims::start_writing_to_rtt(ims, channels.up.1, &mut dp.SYSCFG, &mut dp.EXTI, &mut cp.NVIC);
 
     usb_serial::main(usb_serial::UsbHardware {
         led_pin: gpiob.pb2,
