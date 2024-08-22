@@ -12,6 +12,7 @@ use analog_noise_test1::hal::{self, pac};
 use analog_noise_test1::hal::delay::Delay;
 use analog_noise_test1::hal::gpio::*;
 use analog_noise_test1::hal::prelude::*;
+use analog_noise_test1::spi::*;
 use rtt_target::rprintln;
 
 use cortex_m_rt::entry;
@@ -69,7 +70,7 @@ fn main() -> ! {
 
 
     let mut dp = pac::Peripherals::take().unwrap();
-    let mut cp = cortex_m::peripheral::Peripherals::take().unwrap();
+    let cp = cortex_m::peripheral::Peripherals::take().unwrap();
     dp.RCC.apb2enr.modify(|_, w| w.syscfgen().set_bit());  // Enable clock for SYSCFG (used for EXTI?)
     let mut rcc = dp
         .RCC
@@ -90,18 +91,35 @@ fn main() -> ! {
 
     test_pwm(gpiob.pb3, gpiob.pb4, dp.TIM2, dp.TIM3, &mut rcc, &mut delay);
 
-    if false {
-        let mut ims = ims::IMS::new(gpiob.pb12, gpioa.pa9, gpiob.pb13, gpiob.pb14, gpiob.pb15, dp.SPI2, &mut rcc); 
+    let spi = TimesharedSpi::new(gpiob.pb13, gpiob.pb14, gpiob.pb15, dp.SPI2, &mut rcc);
+
+    if true {
+        let pb12 = gpiob.pb12;  // extract here to avoid moving gpiob into the closure
+        let cs = cortex_m::interrupt::free(move |cs| {
+            pb12.into_push_pull_output(cs)
+        });
+        let spidev = spi.make_device(cs);
+
+        let mut ims = ims::IMS::new(spidev, gpioa.pa9);
         if let Err(err) = ims::test_ims(&mut ims) {
             rprintln!("ERROR: {:?}", err);
         }
 
         touch::test_touch(dp.TSC, &mut rcc, gpioa.pa6, gpioa.pa7, gpioa.pa2, gpioa.pa0);
 
-        ims::start_writing_to_rtt(ims, channels.up.1, &mut dp.SYSCFG, &mut dp.EXTI, &mut cp.NVIC);
-    } else {
+        //FIXME This needs a static lifetime for SPI. How can we achieve that?
+        //ims::start_writing_to_rtt(ims, channels.up.1, &mut dp.SYSCFG, &mut dp.EXTI, &mut cp.NVIC);
+    }
+
+    if true {
+        let pc15 = gpioc.pc15;
+        let cs = cortex_m::interrupt::free(move |cs| {
+            pc15.into_push_pull_output(cs)
+        });
+        let spidev = spi.make_device(cs);
+
         let mut epd = epd::EpaperDisplay::new(
-            gpioc.pc15, gpiof.pf0, gpiof.pf1, gpioc.pc14, gpiob.pb13, gpiob.pb14, gpiob.pb15, dp.SPI2, &mut rcc, &mut delay);
+            spidev, gpiof.pf0, gpiof.pf1, gpioc.pc14, &mut delay);
         if let Err(err) = epd::test_epd(&mut epd, &mut delay) {
             rprintln!("ERROR: {:?}", err);
         }

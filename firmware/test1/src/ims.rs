@@ -3,26 +3,23 @@ use crate::hal::{
     gpio::gpiob::*,
     pac,
     pac::interrupt,
-    prelude::*,
-    rcc::Rcc,
     spi,
-    spi::Spi,
-    spi::{Mode, Phase, Polarity, EightBit},
 };
 use core::{cell::RefCell, convert::Infallible, ops::DerefMut};
 use cortex_m::interrupt::Mutex;
+use embedded_hal::spi::SpiDevice;
+use embedded_hal_bus::spi::{AtomicError, DeviceError};
 use rtt_target::{UpChannel, rprintln};
 
 type CS<MODE> = PB12<MODE>;
-type SCK<MODE> = PB13<MODE>;
-type MISO<MODE> = PB14<MODE>;
-type MOSI<MODE> = PB15<MODE>;
 type INT<MODE> = gpioa::PA9<MODE>;
 
-pub struct IMS {
-    cs: CS<Output<PushPull>>,
+type SPI<'a> = crate::spi::Spi<'a, CS<Output<PushPull>>>;
+
+pub struct IMS<'a> {
+    //cs: CS<Output<PushPull>>,
     //int: INT<Input<Floating>>,
-    spi: Spi<pac::SPI2, SCK<Alternate<AF0>>, MISO<Alternate<AF0>>, MOSI<Alternate<AF0>>, EightBit>,
+    spi: SPI<'a>,
 }
 
 // Directions on the PCB:
@@ -35,6 +32,7 @@ pub enum Error {
     SpiError(spi::Error),
     PinError(Infallible),
     WrongId,
+    Busy,
 }
 
 impl From<spi::Error> for Error {
@@ -43,37 +41,27 @@ impl From<spi::Error> for Error {
     }
 }
 
-impl IMS {
-    pub fn new(pb12: CS<Input<Floating>>, pa9: INT<Input<Floating>>,
-        pb13: SCK<Input<Floating>>, pb14: MISO<Input<Floating>>, pb15: MOSI<Input<Floating>>,
-        spi: pac::SPI2, rcc: &mut Rcc
-    ) -> Self {
-        // IMS wants mode 3 and I think this is already the right setting here.
-        const MODE: Mode = Mode {
-            polarity: Polarity::IdleHigh,
-            phase: Phase::CaptureOnSecondTransition,
-        };
-    
-        // Configure pins for SPI
-        let (mut cs, int, sck, miso, mosi) = cortex_m::interrupt::free(move |cs| {
+impl From<AtomicError<DeviceError<spi::Error, Infallible>>> for Error {
+    fn from(value: AtomicError<DeviceError<spi::Error, Infallible>>) -> Self {
+        match value {
+            AtomicError::Busy => Error::Busy,
+            AtomicError::Other(DeviceError::Cs(e)) => Error::PinError(e),
+            AtomicError::Other(DeviceError::Spi(e)) => Error::SpiError(e),
+        }
+    }
+}
+
+impl<'a> IMS<'a> {
+    pub fn new(spi: SPI<'a>, pa9: INT<Input<Floating>>) -> Self {
+        let int = cortex_m::interrupt::free(move |cs| {
             (
-                pb12.into_push_pull_output(cs),
                 pa9.into_floating_input(cs),
-                pb13.into_alternate_af0(cs),
-                pb14.into_alternate_af0(cs),
-                pb15.into_alternate_af0(cs),
             )
         });
-        cs.set_high().unwrap();
-    
-        // Configure SPI with 100kHz rate
-        //FIXME IMS should support more. This is copied from an example.
-        let spi = Spi::spi2(spi, (sck, miso, mosi), MODE, 100_000.hz(), rcc);
 
         let _ = int;
 
         IMS {
-            cs,
             //int,
             spi,
         }
@@ -86,15 +74,12 @@ impl IMS {
     fn with_chip_selected<F, R>(self: &mut Self, func: F) -> Result<R, Error>
         where F: FnOnce(&mut Self) -> Result<R, Error>
     {
-        self.cs.set_low().map_err(Error::PinError)?;
-        let result = func(self);
-        self.cs.set_high().map_err(Error::PinError)?;
-        result
+        func(self)
     }
 
     fn transfer(self: &mut Self, bytes: &mut [u8]) -> Result<(), Error> {
         self.with_chip_selected(|self2| {
-            self2.spi.transfer(bytes)?;
+            self2.spi.transfer_in_place(bytes)?;
             Ok(())
         })
     }
@@ -113,8 +98,8 @@ impl IMS {
     pub fn write_auto_inc(self: &mut Self, address: u8, values: &mut [u8]) -> Result<(), Error> {
         self.with_chip_selected(|self2| {
             let mut bytes = [Self::ADDRESS_AUTO_INCREMENT | (address & 0x3f)];
-            self2.spi.transfer(&mut bytes)?;
-            self2.spi.transfer(values)?;
+            self2.spi.transfer_in_place(&mut bytes)?;
+            self2.spi.transfer_in_place(values)?;
             Ok(())
         })
     }
@@ -122,8 +107,8 @@ impl IMS {
     pub fn read_auto_inc(self: &mut Self, address: u8, values: &mut [u8]) -> Result<(), Error> {
         self.with_chip_selected(|self2| {
             let mut bytes = [Self::READ_nWRITE | Self::ADDRESS_AUTO_INCREMENT | (address & 0x3f)];
-            self2.spi.transfer(&mut bytes)?;
-            self2.spi.transfer(values)?;
+            self2.spi.transfer_in_place(&mut bytes)?;
+            self2.spi.transfer_in_place(values)?;
             Ok(())
         })
     }
@@ -217,7 +202,7 @@ fn EXTI4_15() {
     write_ims_data_to_channel()
 }
 
-pub fn start_writing_to_rtt(ims: IMS, channel: UpChannel, syscfg: &mut pac::SYSCFG, exti: &mut pac::EXTI, nvic: &mut pac::NVIC) {
+pub fn start_writing_to_rtt(ims: IMS<'static>, channel: UpChannel, syscfg: &mut pac::SYSCFG, exti: &mut pac::EXTI, nvic: &mut pac::NVIC) {
     syscfg.exticr3.modify(|_, w| w.exti9().pa9());
     exti.imr.modify(|_, w| w.mr9().set_bit());
     exti.rtsr.modify(|_, w| w.tr9().set_bit());

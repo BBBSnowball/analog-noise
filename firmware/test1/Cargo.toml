@@ -17,9 +17,12 @@ rtt-target = "0.5.0"
 ## Panic behaviour, see https://crates.io/keywords/panic-impl for alternatives
 panic-halt = "0.2.0"
 ssd1680 = "0.2.0"
-#embedded-hal = "1.0.0"
+embedded-hal = "1.0.0"
 #embedded-hal-old = { package = "embedded-hal", version = "0.2" }
+embedded-hal-bus = "0.2.0"
 embedded-graphics = "0.8.1"
+# portable-atomic is used by embedded-hal-bus. We have to enable its single-core feature to make compare_exchange available.
+portable-atomic = { version = "1", features = ["require-cas", "unsafe-assume-single-core"] }
 
 #[dependencies]
 #embedded-hal = "0.2.7"
