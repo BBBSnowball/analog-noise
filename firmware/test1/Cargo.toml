@@ -30,3 +30,7 @@ portable-atomic = { version = "1", features = ["require-cas", "unsafe-assume-sin
 
 [profile.release]
 debug = true
+
+[profile.dev]
+# We have to optimize in debug builds to make it fit.
+opt-level = "s"
