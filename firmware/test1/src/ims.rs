@@ -45,6 +45,7 @@ impl From<AtomicError<DeviceError<spi::Error, Infallible>>> for Error {
     fn from(value: AtomicError<DeviceError<spi::Error, Infallible>>) -> Self {
         match value {
             AtomicError::Busy => Error::Busy,
+            #[allow(unreachable_patterns)]
             AtomicError::Other(DeviceError::Cs(e)) => Error::PinError(e),
             AtomicError::Other(DeviceError::Spi(e)) => Error::SpiError(e),
         }
