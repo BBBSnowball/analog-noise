@@ -144,6 +144,44 @@ impl<MODE> InputPin for Pin<Input<MODE>> {
     }
 }
 
+use embedded_hal_new::digital::{ErrorType, InputPin as InputPinNew, OutputPin as OutputPinNew};
+
+impl<T> ErrorType for Pin<T> {
+    type Error = Infallible;
+}
+
+impl<T> InputPinNew for Pin<T>
+where
+    Pin<T>: InputPin<Error = Infallible>,
+    Pin<T>: ErrorType<Error = Infallible>,
+{
+    #[inline(always)]
+    fn is_high(&mut self) -> Result<bool, Self::Error> {
+        <dyn InputPin<Error=Infallible>>::is_high(self)
+    }
+
+    #[inline(always)]
+    fn is_low(&mut self) -> Result<bool, Self::Error> {
+        <dyn InputPin<Error=Infallible>>::is_low(self)
+    }
+}
+
+impl<T> OutputPinNew for Pin<T>
+where
+    Pin<T>: OutputPin<Error = Infallible>,
+    Pin<T>: ErrorType<Error = Infallible>,
+{
+    #[inline(always)]
+    fn set_high(&mut self) -> Result<(), Self::Error> {
+        <dyn OutputPin<Error=Infallible>>::set_high(self)
+    }
+
+    #[inline(always)]
+    fn set_low(&mut self) -> Result<(), Self::Error> {
+        <dyn OutputPin<Error=Infallible>>::set_low(self)
+    }
+}
+
 macro_rules! gpio_trait {
     ($gpiox:ident) => {
         impl GpioRegExt for crate::pac::$gpiox::RegisterBlock {
@@ -185,6 +223,9 @@ macro_rules! gpio {
                 use core::convert::Infallible;
 
                 use embedded_hal::digital::v2::{InputPin, OutputPin, StatefulOutputPin, toggleable};
+
+                use embedded_hal_new::digital::{ErrorType, InputPin as InputPinNew, OutputPin as OutputPinNew};
+
                 use crate::{
                     rcc::Rcc,
                     pac::$GPIOX
@@ -562,6 +603,42 @@ macro_rules! gpio {
 
                         fn is_low(&self) -> Result<bool, Self::Error> {
                             Ok(unsafe { (*$GPIOX::ptr()).is_low($i) })
+                        }
+                    }
+
+                    impl<T> ErrorType for $PXi<T> {
+                        type Error = Infallible;
+                    }
+                    
+                    impl<T> InputPinNew for $PXi<T>
+                    where
+                        $PXi<T>: InputPin<Error = Infallible>,
+                        $PXi<T>: ErrorType<Error = Infallible>,
+                    {
+                        #[inline(always)]
+                        fn is_high(&mut self) -> Result<bool, Self::Error> {
+                            <dyn InputPin<Error=Infallible>>::is_high(self)
+                        }
+                    
+                        #[inline(always)]
+                        fn is_low(&mut self) -> Result<bool, Self::Error> {
+                            <dyn InputPin<Error=Infallible>>::is_low(self)
+                        }
+                    }
+                    
+                    impl<T> OutputPinNew for $PXi<T>
+                    where
+                        $PXi<T>: OutputPin<Error = Infallible>,
+                        $PXi<T>: ErrorType<Error = Infallible>,
+                    {
+                        #[inline(always)]
+                        fn set_high(&mut self) -> Result<(), Self::Error> {
+                            <dyn OutputPin<Error=Infallible>>::set_high(self)
+                        }
+                    
+                        #[inline(always)]
+                        fn set_low(&mut self) -> Result<(), Self::Error> {
+                            <dyn OutputPin<Error=Infallible>>::set_low(self)
                         }
                     }
                 )+

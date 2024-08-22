@@ -36,7 +36,7 @@ use embedded_hal::blocking::delay::{DelayMs, DelayUs};
 /// System timer (SysTick) as a delay provider
 #[derive(Clone)]
 pub struct Delay {
-    scale: u32,
+    pub(crate) scale: u32,
 }
 
 const SYSTICK_RANGE: u32 = 0x0100_0000;
@@ -56,6 +56,29 @@ impl Delay {
         Delay { scale }
         // As access to the count register is possible without a reference to the systick, we can
         // just drop it
+    }
+
+    pub(crate) fn delay_ticks(&mut self, ticks: u32) {
+        // The SysTick Reload Value register supports values between 1 and 0x00FFFFFF.
+        // Here less than maximum is used so we have some play if there's a long running interrupt.
+        const MAX_TICKS: u32 = 0x007F_FFFF;
+
+        let mut total_ticks = ticks;
+
+        while total_ticks != 0 {
+            let current_ticks = if total_ticks <= MAX_TICKS {
+                total_ticks
+            } else {
+                MAX_TICKS
+            };
+
+            let start_count = SYST::get_current();
+            total_ticks -= current_ticks;
+
+            // Use the wrapping substraction and the modulo to deal with the systick wrapping around
+            // from 0 to 0xFFFF
+            while (start_count.wrapping_sub(SYST::get_current()) % SYSTICK_RANGE) < current_ticks {}
+        }
     }
 }
 
@@ -89,26 +112,7 @@ impl DelayMs<u8> for Delay {
 // At 48MHz (the maximum frequency), this overflows at approx. 2^32 / 48 = 89 seconds
 impl DelayUs<u32> for Delay {
     fn delay_us(&mut self, us: u32) {
-        // The SysTick Reload Value register supports values between 1 and 0x00FFFFFF.
-        // Here less than maximum is used so we have some play if there's a long running interrupt.
-        const MAX_TICKS: u32 = 0x007F_FFFF;
-
-        let mut total_ticks = us * self.scale;
-
-        while total_ticks != 0 {
-            let current_ticks = if total_ticks <= MAX_TICKS {
-                total_ticks
-            } else {
-                MAX_TICKS
-            };
-
-            let start_count = SYST::get_current();
-            total_ticks -= current_ticks;
-
-            // Use the wrapping substraction and the modulo to deal with the systick wrapping around
-            // from 0 to 0xFFFF
-            while (start_count.wrapping_sub(SYST::get_current()) % SYSTICK_RANGE) < current_ticks {}
-        }
+        self.delay_ticks(us * self.scale);
     }
 }
 

@@ -41,6 +41,8 @@ pub mod dac;
 #[cfg(feature = "device-selected")]
 pub mod delay;
 #[cfg(feature = "device-selected")]
+pub mod delay_ns;
+#[cfg(feature = "device-selected")]
 pub mod flash;
 #[cfg(feature = "device-selected")]
 pub mod gpio;

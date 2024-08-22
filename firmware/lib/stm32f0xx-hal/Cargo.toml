@@ -34,6 +34,7 @@ bare-metal = { version = "1.0.0" }
 cast = "0.3"
 cortex-m = "0.7"
 embedded-hal = { version = "0.2", features = ["unproven"] }
+embedded-hal-new = { version = "1.0.0", features = [], package = "embedded-hal" }
 stm32f0 = "0.14"
 nb = "1"
 void = { version = "1.0", default-features = false }
@@ -69,6 +70,9 @@ stm32f072 = ["stm32f0/stm32f0x2", "device-selected"]
 stm32f078 = ["stm32f0/stm32f0x8", "device-selected"]
 stm32f091 = ["stm32f0/stm32f0x1", "device-selected"]
 stm32f098 = ["stm32f0/stm32f0x8", "device-selected"]
+
+#FIXME Does this help for VS Code? Remove it later!
+default = ["stm32f072","rt","stm32-usbd"]
 
 [profile.dev]
 debug = true
