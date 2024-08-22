@@ -7,6 +7,8 @@ extern crate rtt_target;
 extern crate usb_device;
 extern crate usbd_serial;
 
+use core::mem::MaybeUninit;
+
 use analog_noise_test1::{dac, epd, ims, touch, usb_serial};
 use analog_noise_test1::hal::{self, pac};
 use analog_noise_test1::hal::delay::Delay;
@@ -70,7 +72,7 @@ fn main() -> ! {
 
 
     let mut dp = pac::Peripherals::take().unwrap();
-    let cp = cortex_m::peripheral::Peripherals::take().unwrap();
+    let mut cp = cortex_m::peripheral::Peripherals::take().unwrap();
     dp.RCC.apb2enr.modify(|_, w| w.syscfgen().set_bit());  // Enable clock for SYSCFG (used for EXTI?)
     let mut rcc = dp
         .RCC
@@ -93,6 +95,10 @@ fn main() -> ! {
 
     let spi = TimesharedSpi::new(gpiob.pb13, gpiob.pb14, gpiob.pb15, dp.SPI2, &mut rcc);
 
+    // copy SPI into static memory because it will be used by an interrupt handler
+    static mut SPI: MaybeUninit<TimesharedSpi> = MaybeUninit::uninit();
+    let spi = unsafe { SPI.write(spi) };
+
     if true {
         let pb12 = gpiob.pb12;  // extract here to avoid moving gpiob into the closure
         let cs = cortex_m::interrupt::free(move |cs| {
@@ -107,8 +113,7 @@ fn main() -> ! {
 
         touch::test_touch(dp.TSC, &mut rcc, gpioa.pa6, gpioa.pa7, gpioa.pa2, gpioa.pa0);
 
-        //FIXME This needs a static lifetime for SPI. How can we achieve that?
-        //ims::start_writing_to_rtt(ims, channels.up.1, &mut dp.SYSCFG, &mut dp.EXTI, &mut cp.NVIC);
+        ims::start_writing_to_rtt(ims, channels.up.1, &mut dp.SYSCFG, &mut dp.EXTI, &mut cp.NVIC);
     }
 
     if true {
