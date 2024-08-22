@@ -9,8 +9,11 @@ use crate::hal::{
     spi,
     spi::{Mode, Phase, Polarity, EightBit},
 };
-use embedded_hal::digital::{ErrorType, OutputPin};
-use embedded_hal_bus::{spi::{AtomicDevice, NoDelay}, util::AtomicCell};
+use embedded_hal::{
+    digital::{ErrorType as ErrorTypeDigital, OutputPin},
+    spi::{ErrorType as ErrorTypeSpi, SpiDevice}
+};
+use embedded_hal_bus::{spi::{AtomicDevice, AtomicError, NoDelay}, util::AtomicCell};
 
 type SCK<MODE> = PB13<MODE>;
 type MISO<MODE> = PB14<MODE>;
@@ -68,8 +71,48 @@ impl TimesharedSpi {
     }
 
     pub fn make_device<'a, CS>(&'a self, chip_select: CS) -> Spi<'a, CS>
-    where CS: OutputPin, CS: ErrorType<Error = Infallible>
+    where CS: OutputPin, CS: ErrorTypeDigital<Error = Infallible>
     {
         self.try_make_device(chip_select).unwrap()
+    }
+}
+
+pub struct RepeatWhenBusy<'a, CS> {
+    spi: Spi<'a, CS>
+}
+
+impl<'a, CS> RepeatWhenBusy<'a, CS> {
+    pub fn new(spi: Spi<'a, CS>) -> Self {
+        Self { spi }
+    }
+}
+
+impl<'a, CS> ErrorTypeSpi for RepeatWhenBusy<'a, CS>
+where CS: OutputPin
+{
+    type Error = <Spi<'a, CS> as ErrorTypeSpi>::Error;
+}
+
+impl<'a, CS, E> SpiDevice for RepeatWhenBusy<'a, CS>
+where
+    Spi<'a, CS>: SpiDevice,
+    Spi<'a, CS>: ErrorTypeSpi<Error = AtomicError<E>>,
+    CS: OutputPin,
+    E: embedded_hal::spi::Error,
+{
+    fn transaction(&mut self, operations: &mut [embedded_hal::spi::Operation<'_, u8>]) -> Result<(), Self::Error> {
+        // We run each operation on its own because we need to know how many
+        // we have to repeat in case of busy and we don't want to block for
+        // too long.
+        for i in 0..operations.len() {
+            loop {
+                match self.spi.transaction(&mut operations[i..i]) {
+                    Ok(()) => break,
+                    Err(AtomicError::Busy) => (),
+                    Err(e) => return Err(e),
+                }
+            }
+        }
+        Ok(())
     }
 }

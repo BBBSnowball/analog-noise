@@ -116,7 +116,10 @@ fn main() -> ! {
         let cs = cortex_m::interrupt::free(move |cs| {
             pc15.into_push_pull_output(cs)
         });
-        let spidev = spi.make_device(cs);
+        // The IMS may be using the SPI. It runs in an interrupt, so we can simply wait for it to be done.
+        // We have to do this in a wrapper around the SpiDevice because the display library won't tell us
+        // the SPI error code.
+        let spidev = RepeatWhenBusy::new(spi.make_device(cs));
 
         let mut epd = epd::EpaperDisplay::new(
             spidev, gpiof.pf0, gpiof.pf1, gpioc.pc14, &mut delay);

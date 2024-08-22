@@ -7,6 +7,7 @@ use crate::hal::{
     spi,
     delay::Delay,
 };
+use embedded_hal::spi::SpiDevice;
 use rtt_target::rprintln;
 use ssd1680::{driver::DisplayError, prelude::*};
 use ssd1680::color::Black;
@@ -19,23 +20,23 @@ use embedded_graphics::{
     text::{Alignment, Text, TextStyleBuilder}
 };
 
-type CS<MODE> = PC15<MODE>;
+//type CS<MODE> = PC15<MODE>;
 type RESET<MODE> = PF0<MODE>;
 type DC<MODE> = PF1<MODE>;
 type BUSY<MODE> = PC14<MODE>;
 
-type SPI<'a> = crate::spi::Spi<'a, CS<Output<PushPull>>>;
+//type SPI<'a> = crate::spi::Spi<'a, CS<Output<PushPull>>>;
 //type EPD = Ssd1680<SPI, BUSY<Input<Floating>>, RESET<Output<PushPull>>, DC<Output<PushPull>>>;
 //NOTE Arguments are not consistent between Ssd1680 and DisplayInterface, so we have to swap DC and RESET here.
-type EPD<'a> = Ssd1680<SPI<'a>, BUSY<Input<Floating>>, DC<Output<PushPull>>, RESET<Output<PushPull>>>;
+type EPD<SPI> = Ssd1680<SPI, BUSY<Input<Floating>>, DC<Output<PushPull>>, RESET<Output<PushPull>>>;
 
-pub struct EpaperDisplay<'a> {
+pub struct EpaperDisplay<SPI> {
     //cs: CS<Output<PushPull>>,
     //reset: RESET<Output<PushPull>>,
     //dc: DC<Output<PushPull>>,
     //busy: BUSY<Input<Floating>>,
     //spi: SPI,
-    epd: EPD<'a>,
+    epd: EPD<SPI>,
 }
 
 // Directions on the PCB:
@@ -62,9 +63,12 @@ impl From<DisplayError> for Error {
     }
 }
 
-impl<'a> EpaperDisplay<'a> {
+impl<SPI> EpaperDisplay<SPI>
+where
+    SPI: SpiDevice
+{
     pub fn new(
-        spi: SPI<'a>,
+        spi: SPI,
         reset: RESET<Input<Floating>>,
         dc: DC<Input<Floating>>,
         busy: BUSY<Input<Floating>>,
@@ -98,7 +102,10 @@ fn draw_text(display: &mut Display2in13, text: &str, position: Point) -> Result<
     Ok(())
 }
 
-pub fn test_epd(epd: &mut EpaperDisplay, delay: &mut Delay) -> Result<(), Error> {
+pub fn test_epd<SPI>(epd: &mut EpaperDisplay<SPI>, delay: &mut Delay) -> Result<(), Error>
+where
+    SPI: SpiDevice
+{
     epd.epd.clear_bw_frame()?;
     epd.epd.clear_red_frame()?;
 
