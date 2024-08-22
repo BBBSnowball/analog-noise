@@ -20,29 +20,16 @@ use embedded_graphics::{
     text::{Alignment, Text, TextStyleBuilder}
 };
 
-//type CS<MODE> = PC15<MODE>;
 type RESET<MODE> = PF0<MODE>;
 type DC<MODE> = PF1<MODE>;
 type BUSY<MODE> = PC14<MODE>;
 
-//type SPI<'a> = crate::spi::Spi<'a, CS<Output<PushPull>>>;
-//type EPD = Ssd1680<SPI, BUSY<Input<Floating>>, RESET<Output<PushPull>>, DC<Output<PushPull>>>;
 //NOTE Arguments are not consistent between Ssd1680 and DisplayInterface, so we have to swap DC and RESET here.
 type EPD<SPI> = Ssd1680<SPI, BUSY<Input<Floating>>, DC<Output<PushPull>>, RESET<Output<PushPull>>>;
 
 pub struct EpaperDisplay<SPI> {
-    //cs: CS<Output<PushPull>>,
-    //reset: RESET<Output<PushPull>>,
-    //dc: DC<Output<PushPull>>,
-    //busy: BUSY<Input<Floating>>,
-    //spi: SPI,
     epd: EPD<SPI>,
 }
-
-// Directions on the PCB:
-// Z is positive when PCB is flat on the table with USB port on top.
-// X is positive when PCB stands on the small edge with inputs+USB pointing up.
-// Z is positive when PCB stands on the long edge with USB pointing down.
 
 #[derive(Debug)]
 pub enum Error {
